@@ -11,18 +11,21 @@
     body { margin: 0; background-color: #f0f0f0; }
     model-viewer { width: 100vw; height: 100vh; }
     
-    /* SOLUCIÓN FINAL: MOVER EL BOTÓN NATIVO (EL "CUBITO") */
-    /* Este selector apunta a cualquier botón que model-viewer genere en su raíz */
+    /* SOLUCIÓN FINAL AGRESIVA: MOVER Y DAR ALTA VISIBILIDAD AL BOTÓN NATIVO */
     model-viewer > button {
-      position: fixed !important; /* Posición absoluta en la pantalla */
-      bottom: 20px !important;
+      position: fixed !important; 
+      bottom: 60px !important; /* Lo subimos más para evitar la barra de navegación de iOS */
       left: 50% !important;
-      transform: translateX(-50%) !important; /* Lo centramos */
-      z-index: 10;
-      /* Opcional: Estilos para que se vea más claro */
-      padding: 10px 20px;
-      background: white !important;
-      border-radius: 8px;
+      transform: translateX(-50%) !important;
+      
+      /* Aumentamos visibilidad y contraste */
+      background-color: #3f51b5 !important; /* Azul oscuro para alto contraste */
+      color: white !important; /* Texto blanco */
+      padding: 12px 24px !important; 
+      border-radius: 8px !important;
+      font-size: 18px !important;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4); /* Sombra para destacarlo */
+      z-index: 9999 !important; /* Máxima prioridad para que se vea encima de todo */
     }
   </style>
 </head>
