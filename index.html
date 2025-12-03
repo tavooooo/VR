@@ -14,19 +14,19 @@
 </head>
 <body>
 
-<model-viewer
-    src="./plato.glb" 
-    ar
-    ar-modes="webxr scene-viewer quick-look"
-    camera-controls
-    auto-rotate
-    shadow-intensity="1"
-    environment-image="neutral"
-    scale="1 1 1"
-    alt="Plato de Comida en Realidad Aumentada"
-    poster="./plato-poster.jpg"
-    ar-button  <-- ¡ESTO FUERZA EL BOTÓN!
-></model-viewer>
+  <a rel="ar" href="./plato.glb">
+    <model-viewer
+      src="./plato.glb" 
+      ar
+      ar-modes="webxr quick-look"
+      camera-controls
+      auto-rotate
+      shadow-intensity="1"
+      environment-image="neutral"
+      scale="1 1 1"
+      alt="Plato de Comida en Realidad Aumentada"
+    ></model-viewer>
+  </a>
 
 </body>
 </html>
