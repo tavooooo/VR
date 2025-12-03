@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AR Plato de Comida</title>
+
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+
+  <style>
+    body { margin: 0; background-color: #f0f0f0; }
+    model-viewer { width: 100vw; height: 100vh; }
+  </style>
+</head>
+<body>
+
+  <model-viewer
+    src="https://drive.google.com/uc?export=download&id=1qZ_Ay37CoQXyAh66LuSS9u6aUJAxyc_3"
+    ar
+    ar-modes="webxr scene-viewer quick-look"
+    camera-controls
+    auto-rotate
+    shadow-intensity="1"
+    environment-image="neutral"
+    scale="1 1 1"
+    alt="Plato de Comida en Realidad Aumentada"
+  ></model-viewer>
+
+</body>
+</html>
