@@ -10,32 +10,50 @@
   <style>
     body { margin: 0; background-color: #f0f0f0; }
     model-viewer { width: 100vw; height: 100vh; }
+    
+    /* ESTILOS PARA EL BOTÓN DE RA PERSONALIZADO */
+    #ar-button {
+      background-image: url("https://modelviewer.dev/assets/activate_ar.svg"); /* Ícono de RA */
+      background-repeat: no-repeat;
+      background-size: 20px 20px;
+      background-position: 12px 50%;
+      background-color: white;
+      position: absolute; /* Posición fija sobre el visor */
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%); /* Centrar el botón */
+      padding: 10px 20px 10px 40px;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+      z-index: 10; /* Asegurar que esté sobre el visor */
+    }
   </style>
 </head>
 <body>
 
   <model-viewer
     id="ar-model"  src="./plato.glb" 
-    ar
-    ar-modes="webxr quick-look"
+    ar  ar-modes="webxr quick-look"
     camera-controls
     auto-rotate
     shadow-intensity="1"
     environment-image="neutral"
     scale="1 1 1"
     alt="Plato de Comida en Realidad Aumentada"
-    ar-button  ></model-viewer>
+  ></model-viewer>
+
+  <button id="ar-button">Ver en tu Espacio</button>
 
   <script>
-    // Código para forzar la Realidad Aumentada al hacer clic en el visor
-    const modelViewer = document.getElementById('ar-model');
-
-    modelViewer.addEventListener('click', function(event) {
-      // Evita que el click haga algo más (como navegar o descargar)
-      event.preventDefault(); 
-      
-      // Llama a la función nativa de model-viewer para iniciar la RA
-      this.activateAR(); 
+    // Script que se asegura de llamar la función AR correctamente
+    document.getElementById('ar-button').addEventListener('click', function() {
+      const modelViewer = document.getElementById('ar-model');
+      if (modelViewer.arStatus === 'not-presenting') {
+        modelViewer.activateAR(); 
+      }
     });
   </script>
 
