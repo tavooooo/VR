@@ -14,21 +14,30 @@
 </head>
 <body>
 
-  <a rel="ar" href="./plato.glb">
-    <model-viewer
-      src="./plato.glb" 
-      ar
-      ar-modes="webxr quick-look"
-      camera-controls
-      auto-rotate
-      shadow-intensity="1"
-      environment-image="neutral"
-      scale="1 1 1"
-      alt="Plato de Comida en Realidad Aumentada"
-    ></model-viewer>
-  </a>
+  <model-viewer
+    id="ar-model"  src="./plato.glb" 
+    ar
+    ar-modes="webxr quick-look"
+    camera-controls
+    auto-rotate
+    shadow-intensity="1"
+    environment-image="neutral"
+    scale="1 1 1"
+    alt="Plato de Comida en Realidad Aumentada"
+    ar-button  ></model-viewer>
+
+  <script>
+    // Código para forzar la Realidad Aumentada al hacer clic en el visor
+    const modelViewer = document.getElementById('ar-model');
+
+    modelViewer.addEventListener('click', function(event) {
+      // Evita que el click haga algo más (como navegar o descargar)
+      event.preventDefault(); 
+      
+      // Llama a la función nativa de model-viewer para iniciar la RA
+      this.activateAR(); 
+    });
+  </script>
 
 </body>
 </html>
-
-
