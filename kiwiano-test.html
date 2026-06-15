@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🥝 Kiwiano — Pádel</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:#030712;color:#f9fafb;font-family:system-ui,-apple-system,sans-serif;min-height:100vh}
+input,button{font-family:inherit}
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+input[type=number]{-moz-appearance:textfield}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;border:none;cursor:pointer;font-weight:700;border-radius:14px;transition:filter 0.15s;-webkit-user-select:none;user-select:none}
+.btn:active{filter:brightness(0.85)}
+.btn-g{background:#16a34a;color:#fff;font-size:17px;padding:14px 24px;width:100%}
+.btn-y{background:#eab308;color:#000;font-size:17px;padding:14px 24px;width:100%}
+.btn-d{background:#374151;color:#f9fafb;font-size:17px;padding:14px 24px;width:100%}
+.btn-sm{font-size:14px;padding:8px 16px;border-radius:10px;width:auto}
+
+.card-vis{background:#fff;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.5);border:2px solid #e5e7eb;display:flex;flex-direction:column;justify-content:space-between;padding:5px;flex-shrink:0;animation:popIn .4s ease}
+.card-back{border-radius:12px;border:2px solid #166534;background:repeating-linear-gradient(45deg,#166534 0,#166534 4px,#15803d 4px,#15803d 8px);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.card-back-inner{border:2px solid rgba(74,222,128,.35);border-radius:8px;width:75%;height:75%}
+
+.av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;flex-shrink:0}
+
+@keyframes popIn{0%{opacity:0;transform:scale(.5) rotateY(90deg)}60%{transform:scale(1.08) rotateY(0)}100%{opacity:1;transform:scale(1)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.su{animation:slideUp .3s ease both}
+
+.inp{width:100%;background:#1f2937;border:1.5px solid #4b5563;color:#f9fafb;border-radius:10px;padding:11px 14px;font-size:15px;outline:none}
+.inp:focus{border-color:#4ade80}
+.inp-score{width:100%;background:#1f2937;border:1.5px solid #4b5563;color:#f9fafb;border-radius:10px;padding:12px;font-size:20px;font-weight:700;text-align:center;outline:none}
+.inp-score:focus{border-color:#4ade80}
+
+label{color:#9ca3af;font-size:13px;font-weight:500;display:block;margin-bottom:6px}
+.card-box{background:#111827;border:1.5px solid #374151;border-radius:16px;padding:20px}
+.tag{font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px}
+.tag-g{background:#052e16;color:#4ade80}
+.tag-done{background:#1f2937;color:#9ca3af}
+.section{max-width:480px;margin:0 auto;padding:20px}
+.pair-row{background:rgba(5,46,22,.5);border:1px solid #166534;border-radius:14px;padding:14px;display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.match-card{background:#111827;border:1.5px solid #374151;border-radius:14px;padding:16px;margin-bottom:12px}
+.match-card.done{border-color:#166534}
+.row{display:flex;align-items:center;gap:8px}
+.flex1{flex:1}
+.vs{color:#4b5563;font-weight:700;font-size:12px;padding:0 6px}
+.score-big{font-size:30px;font-weight:700;margin-top:8px}
+.round-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:380px){.grid4{grid-template-columns:repeat(2,1fr)}}
+.sb-row{display:flex;align-items:center;gap:8px;padding:6px 0}
+.trunc{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;min-width:0}
+.podium-base{border-radius:6px 6px 0 0;display:flex;align-items:center;justify-content:center;margin-top:8px;width:80px}
+.history-row{background:#111827;border:1px solid #374151;border-radius:14px;padding:14px 16px;margin-bottom:10px;cursor:pointer}
+.history-row:active{border-color:#166534}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────────
+const COLORS=['#22c55e','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#ec4899','#10b981','#6366f1','#84cc16','#14b8a6','#a855f7','#0ea5e9','#fb923c','#e11d48']
+const VALS=[2,3,4,5,6,7,8,9,10,'J','Q','K','A']
+const SYM={hearts:'♥',diamonds:'♦',clubs:'♣',spades:'♠'}
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let S={
+  screen:'home',
+  tournaments:[],
+  global:[],
+  tid:null,
+  setup:{name:'',n:8,courts:2,names:Array(8).fill(''),step:'config'},
+  drawPhase:'start',
+  revealed:0,
+}
+
+function save(){localStorage.setItem('kw2',JSON.stringify({t:S.tournaments,g:S.global}))}
+function load(){
+  try{const d=JSON.parse(localStorage.getItem('kw2')||'{}');S.tournaments=d.t||[];S.global=d.g||[]}catch(e){}
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function uid(){return Math.random().toString(36).slice(2)+Date.now().toString(36)}
+function shuf(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function gt(){return S.tournaments.find(t=>t.id===S.tid)}
+function gp(t,id){return t.players.find(p=>p.id===id)||{name:'?',color:'#666'}}
+
+// ── CARD LOGIC ─────────────────────────────────────────────────────────────────
+function assignCards(pids){
+  const n=pids.length,vals=shuf(VALS).slice(0,n/2),ps=shuf(pids),out=[]
+  vals.forEach((v,i)=>{
+    const pA=ps[i*2],pB=ps[i*2+1]
+    out.push({playerId:pA,card:{suit:'hearts',value:v},partnerId:pB})
+    out.push({playerId:pB,card:{suit:'diamonds',value:v},partnerId:pA})
+  })
+  return out
+}
+
+function cardHTML(card,sm){
+  const red=card.suit==='hearts'||card.suit==='diamonds'
+  const col=red?'#ef4444':'#1e293b'
+  const w=sm?'52px':'68px',h=sm?'76px':'100px',fs=sm?'11px':'15px',big=sm?'20px':'30px'
+  const s=SYM[card.suit]
+  return `<div class="card-vis" style="width:${w};height:${h}">
+    <div style="color:${col};font-weight:700;font-size:${fs};line-height:1.2">${esc(card.value)}<br>${s}</div>
+    <div style="color:${col};font-size:${big};text-align:center">${s}</div>
+    <div style="color:${col};font-weight:700;font-size:${fs};text-align:right;transform:rotate(180deg);line-height:1.2">${esc(card.value)}<br>${s}</div>
+  </div>`
+}
+
+function cardBackHTML(sm){
+  const w=sm?'52px':'68px',h=sm?'76px':'100px'
+  return `<div class="card-back" style="width:${w};height:${h}"><div class="card-back-inner"></div></div>`
+}
+
+// ── TOURNAMENT ─────────────────────────────────────────────────────────────────
+function createT(name,pnames,courts){
+  const players=pnames.map((n,i)=>({id:uid(),name:n.trim(),color:COLORS[i%16]}))
+  const ca=assignCards(players.map(p=>p.id))
+  const pairs=[];const seen=new Set()
+  for(const a of ca){if(seen.has(a.playerId))continue;seen.add(a.playerId);seen.add(a.partnerId);pairs.push([a.playerId,a.partnerId])}
+  const sp=shuf(pairs),matches=[]
+  for(let i=0;i+1<sp.length;i+=2){
+    matches.push({id:uid(),court:(matches.length%courts)+1,teamA:sp[i],teamB:sp[i+1],result:null,status:'pending'})
+  }
+  const t={id:uid(),name,date:new Date().toISOString(),courts,players,ca,rounds:[{n:1,matches,status:'ip'}],status:'draw',final:null}
+  S.tournaments.push(t);save();return t
+}
+
+function winners(m){if(!m.result)return m.teamA;return m.result.w==='A'?m.teamA:m.teamB}
+function losers(m){if(!m.result)return m.teamB;return m.result.w==='A'?m.teamB:m.teamA}
+function rp4(ps){const[a,b,c,d]=shuf(ps);return[[a,b],[c,d]]}
+
+function nextRound(t){
+  const cur=t.rounds[t.rounds.length-1],ms=cur.matches,nm=[]
+  if(ms.length<2){
+    // Only 1 match: shuffle all 4 players into new pairs
+    const all=[...ms[0].teamA,...ms[0].teamB],[a,b,c,d]=shuf(all)
+    nm.push({id:uid(),court:1,teamA:[a,b],teamB:[c,d],result:null,status:'pending'})
+  } else {
+    for(let i=0;i+1<ms.length;i+=2){
+      const mA=ms[i],mB=ms[i+1]
+      const[wp1,wp2]=rp4([...winners(mA),...winners(mB)])
+      const[lp1,lp2]=rp4([...losers(mA),...losers(mB)])
+      const cb=nm.length%t.courts
+      nm.push({id:uid(),court:cb+1,teamA:wp1,teamB:wp2,result:null,status:'pending'})
+      nm.push({id:uid(),court:((cb+1)%t.courts)+1,teamA:lp1,teamB:lp2,result:null,status:'pending'})
+    }
+  }
+  return{n:cur.n+1,matches:nm,status:'ip'}
+}
+
+function rankings(t){
+  const pm={}; t.players.forEach(p=>pm[p.id]=0)
+  for(const r of t.rounds){for(const m of r.matches){
+    if(!m.result)continue
+    const pA=m.result.sA+(m.result.w==='A'?3:0),pB=m.result.sB+(m.result.w==='B'?3:0)
+    m.teamA.forEach(id=>pm[id]=(pm[id]||0)+pA)
+    m.teamB.forEach(id=>pm[id]=(pm[id]||0)+pB)
+  }}
+  return Object.entries(pm).sort((a,b)=>b[1]-a[1]).map(([id,pts],i)=>({id,pts,pos:i+1}))
+}
+
+function mut(fn){
+  const i=S.tournaments.findIndex(t=>t.id===S.tid);if(i<0)return
+  S.tournaments[i]=fn(S.tournaments[i]);save();render()
+}
+
+function av(name,col,sz){
+  const s={sm:32,md:40,lg:54}[sz||'md'],fs={sm:13,md:15,lg:20}[sz||'md']
+  return `<div class="av" style="width:${s}px;height:${s}px;background:${col};font-size:${fs}px">${esc(name.charAt(0).toUpperCase())}</div>`
+}
+
+// ── RENDER SCREENS ─────────────────────────────────────────────────────────────
+
+function renderHome(){
+  const rec=[...S.tournaments].reverse().slice(0,5)
+  return`<div style="min-height:100vh;background:linear-gradient(to bottom,#052e16,#030712);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px">
+  <div class="su" style="text-align:center;margin-bottom:36px">
+    <div style="font-size:60px;margin-bottom:10px">🥝</div>
+    <h1 style="font-size:38px;font-weight:900;color:#4ade80;letter-spacing:-1px">KIWIANO</h1>
+    <p style="color:#6b7280;margin-top:6px">Torneos de Pádel Mexicano</p>
+  </div>
+  <div class="su" style="width:100%;max-width:340px;display:flex;flex-direction:column;gap:12px">
+    <button class="btn btn-g" onclick="goSetup()">🎾 Nuevo Torneo</button>
+    <button class="btn btn-d" onclick="go('history')">📋 Historial</button>
+    <button class="btn btn-d" onclick="go('ranking')">🏆 Ranking Global</button>
+  </div>
+  ${rec.length?`<div style="margin-top:28px;width:100%;max-width:340px">
+    <p style="color:#6b7280;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Recientes</p>
+    ${rec.map(t=>`<div class="history-row" onclick="openT('${t.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><p style="font-weight:600;font-size:14px">${esc(t.name)}</p>
+        <p style="color:#6b7280;font-size:11px;margin-top:3px">${new Date(t.date).toLocaleDateString('es-ES')} · ${t.players.length} jug.</p></div>
+        <span class="tag ${t.status==='finished'?'tag-done':'tag-g'}">${t.status==='finished'?'Fin.':'En curso'}</span>
+      </div></div>`).join('')}
+  </div>`:''}
+</div>`
+}
+
+function renderSetup(){
+  const s=S.setup
+  if(s.step==='config')return`<div style="min-height:100vh;background:linear-gradient(to bottom,#052e16,#030712);display:flex;align-items:center;justify-content:center;padding:20px">
+  <div style="width:100%;max-width:380px">
+    <div style="text-align:center;margin-bottom:24px"><div style="font-size:36px">🥝</div><h1 style="font-size:24px;font-weight:900;color:#4ade80;margin-top:6px">KIWIANO</h1></div>
+    <div class="card-box" style="display:flex;flex-direction:column;gap:18px">
+      <div><label>Nombre del torneo</label>
+        <input class="inp" id="tname" type="text" value="${esc(s.name)}" autocapitalize="words" oninput="S.setup.name=this.value" /></div>
+      <div><label>Participantes</label>
+        <div style="display:flex;align-items:center;gap:16px">
+          <button class="btn btn-d btn-sm" onclick="chN(-2)" style="width:44px;height:44px;font-size:22px;flex-shrink:0">−</button>
+          <span style="font-size:30px;font-weight:700;flex:1;text-align:center">${s.n}</span>
+          <button class="btn btn-d btn-sm" onclick="chN(2)" style="width:44px;height:44px;font-size:22px;flex-shrink:0">+</button>
+        </div>
+        <p style="color:#4b5563;font-size:11px;text-align:center;margin-top:5px">mínimo 4 · múltiplos de 2</p>
+      </div>
+      <div><label>Canchas disponibles</label>
+        <div style="display:flex;gap:8px">
+          ${[1,2,3,4].map(n=>`<button class="btn btn-sm" onclick="S.setup.courts=${n};render()" style="flex:1;height:44px;font-size:17px;background:${s.courts===n?'#16a34a':'#374151'};color:${s.courts===n?'#fff':'#d1d5db'};border-radius:10px">${n}</button>`).join('')}
+        </div>
+      </div>
+      <button class="btn btn-g" onclick="goPlayers()">Ingresar jugadores →</button>
+      <button class="btn" style="background:none;color:#6b7280;font-size:14px" onclick="go('home')">← Volver</button>
+    </div>
+  </div></div>`
+
+  return`<div style="min-height:100vh;background:linear-gradient(to bottom,#052e16,#030712);padding:20px">
+  <div style="max-width:400px;margin:0 auto">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+      <button class="btn" style="background:none;color:#9ca3af;font-size:20px" onclick="S.setup.step='config';render()">←</button>
+      <h2 style="font-size:18px;font-weight:700">${s.n} jugadores</h2>
+    </div>
+    <div class="grid2" style="margin-bottom:16px">
+      ${Array.from({length:s.n},(_,i)=>`<div class="row">
+        <div class="av" style="width:28px;height:28px;font-size:11px;background:${COLORS[i%16]};flex-shrink:0">${i+1}</div>
+        <input class="inp" type="text" autocapitalize="words" value="${esc(s.names[i]||'')}" placeholder="Jugador ${i+1}" oninput="S.setup.names[${i}]=this.value" style="min-width:0" />
+      </div>`).join('')}
+    </div>
+    <button class="btn btn-y" onclick="doStartDraw()">🎴 ¡Sortear parejas!</button>
+  </div></div>`
+}
+
+function renderDraw(){
+  const t=gt();if(!t)return''
+  const ph=S.drawPhase,rc=S.revealed
+  const phLbl={start:'¡Preparando mazo...',revealing:'¡Revelando cartas!',pairs:'¡Parejas formadas!',matches:'¡Cuadro de partidos!'}
+
+  const pairs=[];const seen=new Set()
+  for(const a of t.ca){if(seen.has(a.playerId))continue;seen.add(a.playerId);seen.add(a.partnerId)
+    pairs.push({pA:gp(t,a.playerId),pB:gp(t,a.partnerId),cA:a.card,cB:t.ca.find(x=>x.playerId===a.partnerId)?.card})}
+
+  return`<div style="min-height:100vh;background:linear-gradient(to bottom,#052e16,#030712);padding:20px">
+  <div class="section" style="padding-top:20px">
+    <h1 style="text-align:center;color:#4ade80;font-size:22px;font-weight:700;margin-bottom:4px">${esc(t.name)}</h1>
+    <p style="text-align:center;color:#6b7280;margin-bottom:24px;font-size:15px">${phLbl[ph]||''}</p>
+
+    ${(ph==='revealing'||ph==='pairs')?`<div class="${t.players.length<=4?'grid4':'grid2'}" style="margin-bottom:20px">
+      ${t.players.map((p,i)=>{const a=t.ca.find(x=>x.playerId===p.id);const rev=i<rc;return`<div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+        ${av(p.name,p.color,'sm')}
+        <p style="font-size:11px;font-weight:600;text-align:center;color:#fff;line-height:1.2">${esc(p.name)}</p>
+        ${rev&&a?cardHTML(a.card,true):cardBackHTML(true)}
+      </div>`}).join('')}
+    </div>`:''}
+
+    ${ph==='pairs'?`<h2 style="color:#facc15;font-size:17px;font-weight:700;text-align:center;margin-bottom:14px">🎴 Parejas del sorteo</h2>
+    ${pairs.map(({pA,pB,cA,cB},i)=>`<div class="pair-row su">
+      <span style="color:#facc15;font-weight:700;font-size:15px;width:24px">P${i+1}</span>
+      <div class="row flex1">${av(pA.name,pA.color,'sm')}<span style="font-size:12px;font-weight:500;${''}">${esc(pA.name)}</span>${cA?cardHTML(cA,true):''}</div>
+      <span style="color:#4ade80;font-weight:700;font-size:16px;flex-shrink:0">+</span>
+      <div class="row flex1">${av(pB.name,pB.color,'sm')}<span style="font-size:12px;font-weight:500">${esc(pB.name)}</span>${cB?cardHTML(cB,true):''}</div>
+    </div>`).join('')}
+    <div style="text-align:center;margin-top:18px"><button class="btn btn-y" onclick="S.drawPhase='matches';render()" style="width:auto;padding:12px 28px">Ver partidos Ronda 1 →</button></div>`:''}
+
+    ${ph==='matches'?`<h2 style="color:#facc15;font-size:17px;font-weight:700;text-align:center;margin-bottom:14px">🎾 Ronda 1 — Partidos</h2>
+    ${t.rounds[0].matches.map(m=>{const tA=m.teamA.map(id=>gp(t,id)),tB=m.teamB.map(id=>gp(t,id));return`<div class="match-card su">
+      <span class="tag tag-g" style="font-size:11px">Cancha ${m.court}</span>
+      <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+        <div class="row">${tA.map(p=>`<div class="row">${av(p.name,p.color,'sm')}<span style="font-size:13px">${esc(p.name)}</span></div>`).join('')}</div>
+        <div style="color:#facc15;font-weight:700;text-align:center">VS</div>
+        <div class="row">${tB.map(p=>`<div class="row">${av(p.name,p.color,'sm')}<span style="font-size:13px">${esc(p.name)}</span></div>`).join('')}</div>
+      </div></div>`}).join('')}
+    <div style="text-align:center;margin-top:18px"><button class="btn btn-g" onclick="startT()" style="font-size:18px;padding:16px 36px;width:auto">🎾 ¡Comenzar Torneo!</button></div>`:''}
+  </div></div>`
+}
+
+function renderRound(){
+  const t=gt();if(!t)return''
+  const cur=t.rounds[t.rounds.length-1],allDone=cur.matches.every(m=>m.status==='finished')
+  const rnk=rankings(t)
+  return`<div style="min-height:100vh;background:linear-gradient(to bottom,#030712,#052e16);padding:20px">
+  <div style="max-width:480px;margin:0 auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <div><h1 style="font-size:18px;font-weight:700">${esc(t.name)}</h1>
+        <p style="color:#4ade80;font-size:12px;margin-top:2px">Ronda ${cur.n} · ${t.courts} cancha${t.courts>1?'s':''}</p></div>
+      <div style="display:flex;gap:5px">
+        ${t.rounds.map(r=>`<div class="round-dot" style="background:${r.n<cur.n?'#16a34a':r.n===cur.n?'#eab308':'#374151'};color:${r.n===cur.n?'#000':'#fff'}">${r.n}</div>`).join('')}
+      </div>
+    </div>
+
+    <!-- scoreboard -->
+    <div class="card-box" style="margin-bottom:18px;padding:14px">
+      <p style="color:#facc15;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">🏅 Puntaje actual</p>
+      <div class="grid2">
+        ${rnk.map(({id,pts,pos})=>{const p=gp(t,id);const m=['🥇','🥈','🥉'];return`<div class="sb-row">
+          <span style="font-size:13px;width:22px">${m[pos-1]||pos}</span>
+          ${av(p.name,p.color,'sm')}
+          <span class="trunc" style="font-size:12px;flex:1">${esc(p.name)}</span>
+          <span style="color:#4ade80;font-weight:700;font-size:12px;flex-shrink:0">${pts}</span>
+        </div>`}).join('')}
+      </div>
+    </div>
+
+    <h2 style="color:#facc15;font-size:15px;font-weight:700;margin-bottom:12px">🎾 Partidos — Ronda ${cur.n}</h2>
+    ${cur.matches.map((m,i)=>renderMatch(t,m,cur.n)).join('')}
+
+    ${allDone?`<div style="display:flex;gap:10px;margin-top:4px">
+      <button class="btn btn-g flex1" onclick="doNextRound()" style="font-size:15px;padding:14px">➡ Siguiente ronda</button>
+      <button class="btn btn-y flex1" onclick="doFinish()" style="font-size:15px;padding:14px">🏁 Finalizar</button>
+    </div>`:''}
+  </div></div>`
+}
+
+function renderMatch(t,m,rn){
+  const tA=m.teamA.map(id=>gp(t,id)),tB=m.teamB.map(id=>gp(t,id)),done=m.status==='finished'
+  return`<div class="match-card ${done?'done':''}">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+    <span class="tag tag-g">Cancha ${m.court}</span>
+    ${done?'<span style="color:#4ade80;font-size:12px;font-weight:600">✓ Registrado</span>':''}
+  </div>
+  <div style="display:flex;gap:4px;align-items:stretch">
+    <div class="flex1">
+      ${tA.map(p=>`<div class="row" style="margin-bottom:5px">${av(p.name,p.color,'sm')}<span style="font-size:13px;font-weight:500">${esc(p.name)}</span></div>`).join('')}
+      ${done?`<div class="score-big" style="color:${m.result.w==='A'?'#facc15':'#6b7280'}">${m.result.sA}${m.result.w==='A'?' 🏆':''}</div>`:''}
+    </div>
+    <div class="vs">VS</div>
+    <div class="flex1" style="text-align:right">
+      ${tB.map(p=>`<div class="row" style="justify-content:flex-end;margin-bottom:5px"><span style="font-size:13px;font-weight:500">${esc(p.name)}</span>${av(p.name,p.color,'sm')}</div>`).join('')}
+      ${done?`<div class="score-big" style="color:${m.result.w==='B'?'#facc15':'#6b7280'}">${m.result.w==='B'?'🏆 ':''}${m.result.sB}</div>`:''}
+    </div>
+  </div>
+  ${!done?`<div style="display:flex;gap:8px;align-items:center;margin-top:12px">
+    <input class="inp-score flex1" id="sa_${m.id}" type="number" min="0" max="99" placeholder="A" oninput="chkBtn('${m.id}')" />
+    <span style="color:#6b7280;font-weight:700">−</span>
+    <input class="inp-score flex1" id="sb_${m.id}" type="number" min="0" max="99" placeholder="B" oninput="chkBtn('${m.id}')" />
+    <button id="btn_${m.id}" class="btn btn-g btn-sm" onclick="subRes('${m.id}',${rn})" disabled style="width:52px;height:44px;opacity:.4;cursor:not-allowed;font-size:15px">OK</button>
+  </div>
+  <p id="err_${m.id}" style="color:#f87171;font-size:11px;margin-top:4px;display:none">No puede ser empate</p>`:''}
+</div>`
+}
+
+function renderResults(){
+  const t=gt();if(!t||!t.final)return''
+  const top=t.final.slice(0,3)
+  const pod=[top[1],top[0],top[2]].filter(Boolean)
+  const meds=['🥈','🥇','🥉'],hts=['88px','116px','68px'],pos=[2,1,3],cols=['#6b7280','#d97706','#92400e']
+  return`<div style="min-height:100vh;background:linear-gradient(to bottom,#451a03,#030712);padding:20px">
+  <div style="max-width:400px;margin:0 auto">
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="font-size:40px">🏆</div>
+      <h1 style="color:#facc15;font-size:30px;font-weight:900;margin:8px 0 4px">¡Torneo Finalizado!</h1>
+      <p style="color:#6b7280">${esc(t.name)}</p>
+    </div>
+    <div style="display:flex;align-items:flex-end;justify-content:center;gap:12px;margin-bottom:28px">
+      ${pod.map(({id,pts},i)=>{const p=gp(t,id);return`<div style="display:flex;flex-direction:column;align-items:center">
+        <span style="font-size:26px">${meds[i]}</span>
+        ${av(p.name,p.color,'lg')}
+        <p style="font-size:11px;font-weight:700;text-align:center;margin:5px 0 2px;max-width:70px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${esc(p.name)}</p>
+        <p style="color:#4ade80;font-size:11px;font-weight:700;margin:0">${pts}pts</p>
+        <div class="podium-base" style="height:${hts[i]};background:${cols[i]}"><span style="color:#fff;font-weight:700;font-size:20px">${pos[i]}</span></div>
+      </div>`}).join('')}
+    </div>
+    <div class="card-box" style="margin-bottom:18px;padding:0;overflow:hidden">
+      <div style="padding:12px 16px;border-bottom:1px solid #374151"><p style="font-weight:700">Clasificación final</p></div>
+      ${t.final.map(({id,pts,pos})=>{const p=gp(t,id);return`<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid #1f2937">
+        <span style="color:#6b7280;font-weight:700;font-size:13px;width:20px">${pos}</span>
+        ${av(p.name,p.color,'sm')}
+        <span style="flex:1;font-size:14px">${esc(p.name)}</span>
+        <span style="color:#4ade80;font-weight:700">${pts} pts</span>
+      </div>`}).join('')}
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-g flex1" onclick="goSetup()" style="font-size:15px">Nuevo Torneo</button>
+      <button class="btn btn-d flex1" onclick="go('history')" style="font-size:15px">Historial</button>
+    </div>
+  </div></div>`
+}
+
+function renderHistory(){
+  const list=[...S.tournaments].reverse()
+  return`<div style="min-height:100vh;background:linear-gradient(to bottom,#030712,#052e16);padding:20px">
+  <div style="max-width:480px;margin:0 auto">
+    <div class="row" style="margin-bottom:22px;gap:12px">
+      <button class="btn" style="background:none;color:#9ca3af;font-size:20px" onclick="go('home')">←</button>
+      <h1 style="font-size:21px;font-weight:700">Historial de Torneos</h1>
+    </div>
+    ${list.length===0?`<div style="text-align:center;padding:60px 0">
+      <div style="font-size:44px;margin-bottom:14px">🎾</div>
+      <p style="color:#6b7280">No hay torneos aún. ¡Crea el primero!</p>
+      <button class="btn btn-g" onclick="goSetup()" style="margin-top:16px;width:auto;padding:12px 24px">Nuevo Torneo</button>
+    </div>`:list.map(t=>{const top=t.final?.[0]?gp(t,t.final[0].id):null;return`
+    <div class="history-row" onclick="openT('${t.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><h2 style="font-size:15px;font-weight:700">${esc(t.name)}</h2>
+          <p style="color:#6b7280;font-size:11px;margin-top:3px">${new Date(t.date).toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})}</p>
+          <div style="display:flex;gap:10px;font-size:11px;color:#6b7280;margin-top:4px">
+            <span>👤 ${t.players.length}</span><span>🎾 ${t.courts}</span><span>📋 ${t.rounds.length} rondas</span>
+          </div>
+          ${top?`<p style="color:#facc15;font-size:12px;margin-top:5px">🥇 ${esc(top.name)} (${t.final[0].pts}pts)</p>`:''}
+        </div>
+        <span class="tag ${t.status==='finished'?'tag-done':'tag-g'}">${t.status==='finished'?'Fin.':'En curso'}</span>
+      </div>
+    </div>`}).join('')}
+  </div></div>`
+}
+
+function renderRanking(){
+  const list=[...S.global].sort((a,b)=>b.stats.tp-a.stats.tp)
+  const meds=['🥇','🥈','🥉']
+  return`<div style="min-height:100vh;background:linear-gradient(to bottom,#030712,#052e16);padding:20px">
+  <div style="max-width:480px;margin:0 auto">
+    <div class="row" style="margin-bottom:22px;gap:12px">
+      <button class="btn" style="background:none;color:#9ca3af;font-size:20px" onclick="go('home')">←</button>
+      <h1 style="font-size:21px;font-weight:700">🏆 Ranking Global</h1>
+    </div>
+    ${list.length===0?`<div style="text-align:center;padding:60px 0">
+      <div style="font-size:44px;margin-bottom:14px">🏆</div>
+      <p style="color:#6b7280">Juega torneos para aparecer en el ranking.</p>
+    </div>`:list.map((p,i)=>{const wr=p.stats.mw+p.stats.ml>0?Math.round(p.stats.mw/(p.stats.mw+p.stats.ml)*100):0;return`
+    <div style="background:#111827;border:1px solid #374151;border-radius:12px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:18px;width:26px;text-align:center">${meds[i]||`<span style="color:#6b7280;font-size:13px;font-weight:700">${i+1}</span>`}</span>
+      ${av(p.name,p.color,'md')}
+      <div class="flex1 trunc">
+        <p style="font-weight:700;font-size:14px">${esc(p.name)}</p>
+        <p style="color:#6b7280;font-size:11px;margin-top:2px">${p.stats.t} torneo${p.stats.t!==1?'s':''} · ${p.stats.mw}V/${p.stats.ml}D · ${wr}%</p>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <p style="color:#4ade80;font-weight:700;font-size:18px">${p.stats.tp}</p>
+        <p style="color:#6b7280;font-size:11px">pts</p>
+      </div>
+    </div>`}).join('')}
+  </div></div>`
+}
+
+// ── ACTIONS ────────────────────────────────────────────────────────────────────
+function go(screen){S.screen=screen;render()}
+
+function goSetup(){
+  S.setup={name:`Torneo Kiwiano ${new Date().toLocaleDateString('es-ES',{day:'numeric',month:'long'})}`,n:8,courts:2,names:Array(8).fill(''),step:'config'}
+  go('setup')
+}
+
+function goPlayers(){S.setup.step='players';render()}
+
+function chN(d){
+  const n=S.setup.n+d;if(n<4||n%2!==0)return
+  S.setup.n=n;const ns=[...S.setup.names];while(ns.length<n)ns.push('');S.setup.names=ns.slice(0,n);render()
+}
+
+function doStartDraw(){
+  const{name,n,courts,names}=S.setup
+  const nm=names.slice(0,n);if(nm.some(x=>!x.trim()))return
+  const t=createT(name,nm,courts);S.tid=t.id;S.drawPhase='revealing';S.revealed=0;S.screen='draw';render()
+  let c=0;const iv=setInterval(()=>{c++;S.revealed=c;render();if(c>=n){clearInterval(iv);setTimeout(()=>{S.drawPhase='pairs';render()},600)}},300)
+}
+
+function startT(){mut(t=>({...t,status:'in_progress'}));S.screen='round';render()}
+
+function openT(id){
+  S.tid=id;const t=S.tournaments.find(x=>x.id===id);if(!t)return
+  if(t.status==='draw'){S.drawPhase='pairs';S.revealed=t.players.length;S.screen='draw'}
+  else if(t.status==='finished')S.screen='results'
+  else S.screen='round'
+  render()
+}
+
+function chkBtn(mid){
+  const sa=document.getElementById('sa_'+mid),sb=document.getElementById('sb_'+mid)
+  const btn=document.getElementById('btn_'+mid),err=document.getElementById('err_'+mid)
+  if(!sa||!sb||!btn)return
+  const a=parseInt(sa.value),b=parseInt(sb.value),ok=!isNaN(a)&&!isNaN(b)&&a!==b
+  btn.disabled=!ok;btn.style.opacity=ok?'1':'.4';btn.style.cursor=ok?'pointer':'not-allowed'
+  if(err)err.style.display=(!isNaN(a)&&!isNaN(b)&&a===b)?'block':'none'
+}
+
+function subRes(mid,rn){
+  const sa=parseInt(document.getElementById('sa_'+mid)?.value)
+  const sb=parseInt(document.getElementById('sb_'+mid)?.value)
+  if(isNaN(sa)||isNaN(sb)||sa===sb)return
+  mut(t=>{const rounds=t.rounds.map(r=>{if(r.n!==rn)return r
+    const ms=r.matches.map(m=>{if(m.id!==mid)return m;return{...m,result:{sA:sa,sB:sb,w:sa>sb?'A':'B'},status:'finished'}})
+    return{...r,matches:ms,status:ms.every(m=>m.status==='finished')?'finished':r.status}
+  });return{...t,rounds}})
+}
+
+function doNextRound(){
+  const t=gt();if(!t)return
+  const nr=nextRound(t);mut(t=>({...t,rounds:[...t.rounds,nr]}))
+}
+
+function doFinish(){
+  const t=gt();if(!t)return
+  const rnk=rankings(t),gl=[...S.global]
+  for(const{id,pts,pos}of rnk){
+    const p=t.players.find(x=>x.id===id);if(!p)continue
+    let gw=0,gl2=0,mw=0,ml=0
+    for(const r of t.rounds){for(const m of r.matches){if(!m.result)continue
+      const inA=m.teamA.includes(id),inB=m.teamB.includes(id)
+      if(inA){gw+=m.result.sA;gl2+=m.result.sB;m.result.w==='A'?mw++:ml++}
+      else if(inB){gw+=m.result.sB;gl2+=m.result.sA;m.result.w==='B'?mw++:ml++}
+    }}
+    const ei=gl.findIndex(g=>g.name===p.name)
+    if(ei>=0){const e=gl[ei];gl[ei]={...e,stats:{tp:e.stats.tp+pts,t:e.stats.t+1,mw:e.stats.mw+mw,ml:e.stats.ml+ml,gw:e.stats.gw+gw,gl:e.stats.gl+gl2}}}
+    else gl.push({id:p.id,name:p.name,color:p.color,stats:{tp:pts,t:1,mw,ml:ml,gw,gl:gl2}})
+  }
+  S.global=gl;mut(t=>({...t,status:'finished',final:rnk}));S.screen='results';render()
+}
+
+// ── RENDER LOOP ────────────────────────────────────────────────────────────────
+function render(){
+  const el=document.getElementById('app')
+  const screens={home:renderHome,setup:renderSetup,draw:renderDraw,round:renderRound,results:renderResults,history:renderHistory,ranking:renderRanking}
+  el.innerHTML=(screens[S.screen]||renderHome)()
+  window.scrollTo(0,0)
+}
+
+load();render()
+</script>
+</body>
+</html>
