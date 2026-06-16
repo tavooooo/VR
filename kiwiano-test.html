@@ -71,15 +71,16 @@ let S={
   screen:'home',
   tournaments:[],
   global:[],
+  savedPlayers:[],
   tid:null,
   setup:{name:'',n:8,courts:2,names:Array(8).fill(''),step:'config'},
   drawPhase:'start',
   revealed:0,
 }
 
-function save(){localStorage.setItem('kw2',JSON.stringify({t:S.tournaments,g:S.global}))}
+function save(){localStorage.setItem('kw2',JSON.stringify({t:S.tournaments,g:S.global,sp:S.savedPlayers}))}
 function load(){
-  try{const d=JSON.parse(localStorage.getItem('kw2')||'{}');S.tournaments=d.t||[];S.global=d.g||[]}catch(e){}
+  try{const d=JSON.parse(localStorage.getItem('kw2')||'{}');S.tournaments=d.t||[];S.global=d.g||[];S.savedPlayers=d.sp||[]}catch(e){}
 }
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
@@ -128,7 +129,15 @@ function createT(name,pnames,courts){
     matches.push({id:uid(),court:(matches.length%courts)+1,teamA:sp[i],teamB:sp[i+1],result:null,status:'pending'})
   }
   const t={id:uid(),name,date:new Date().toISOString(),courts,players,ca,rounds:[{n:1,matches,status:'ip'}],status:'draw',final:null}
-  S.tournaments.push(t);save();return t
+  S.tournaments.push(t)
+  // auto-save new player names to roster
+  players.forEach((p,i)=>{
+    const nm=p.name.trim();if(!nm)return
+    if(!S.savedPlayers.find(x=>x.name.toLowerCase()===nm.toLowerCase())){
+      S.savedPlayers.push({name:nm,color:COLORS[i%16]})
+    }
+  })
+  save();return t
 }
 
 function winners(m){if(!m.result)return m.teamA;return m.result.w==='A'?m.teamA:m.teamB}
@@ -234,6 +243,16 @@ function renderSetup(){
       <button class="btn" style="background:none;color:#9ca3af;font-size:20px" onclick="S.setup.step='config';render()">←</button>
       <h2 style="font-size:18px;font-weight:700">${s.n} jugadores</h2>
     </div>
+    ${S.savedPlayers.length?`<div style="margin-bottom:16px">
+      <p style="color:#6b7280;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Jugadores guardados</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        ${S.savedPlayers.map(p=>{const used=s.names.slice(0,s.n).some(n=>n.trim().toLowerCase()===p.name.toLowerCase());return`<div style="display:flex;align-items:center;gap:4px;background:${used?'#1f2937':'#111827'};border:1px solid ${used?'#16a34a':'#374151'};border-radius:20px;padding:5px 10px 5px 6px;opacity:${used?'0.5':'1'}">
+          <div class="av" style="width:22px;height:22px;font-size:10px;background:${p.color};flex-shrink:0">${esc(p.name[0].toUpperCase())}</div>
+          <span style="font-size:12px;font-weight:600;color:#e5e7eb;cursor:${used?'default':'pointer'}" onclick="${used?'':'addFromSaved('+JSON.stringify(p.name)+','+JSON.stringify(p.color)+')'}">${esc(p.name)}</span>
+          <button onclick="removeSaved(${JSON.stringify(p.name)})" style="background:none;border:none;color:#6b7280;font-size:14px;padding:0 0 0 4px;cursor:pointer;line-height:1">×</button>
+        </div>`}).join('')}
+      </div>
+    </div>`:''}
     <div class="grid2" style="margin-bottom:16px">
       ${Array.from({length:s.n},(_,i)=>`<div class="row">
         <div class="av" style="width:28px;height:28px;font-size:11px;background:${COLORS[i%16]};flex-shrink:0">${i+1}</div>
@@ -461,6 +480,16 @@ function goSetup(){
 }
 
 function goPlayers(){S.setup.step='players';render()}
+
+function addFromSaved(name,color){
+  const s=S.setup,idx=s.names.findIndex((n,i)=>i<s.n&&!n.trim())
+  if(idx<0)return
+  s.names[idx]=name;render()
+}
+function removeSaved(name){
+  S.savedPlayers=S.savedPlayers.filter(x=>x.name.toLowerCase()!==name.toLowerCase())
+  save();render()
+}
 
 function chN(d){
   const n=S.setup.n+d;if(n<4||n%2!==0)return
