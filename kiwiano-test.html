@@ -95,7 +95,7 @@ function assignCards(pids){
   vals.forEach((v,i)=>{
     const pA=ps[i*2],pB=ps[i*2+1]
     out.push({playerId:pA,card:{suit:'hearts',value:v},partnerId:pB})
-    out.push({playerId:pB,card:{suit:'diamonds',value:v},partnerId:pA})
+    out.push({playerId:pB,card:{suit:'clubs',value:v},partnerId:pA})
   })
   return out
 }

@@ -1,11 +1,11 @@
 import { PokerCard, Suit, CardValue } from '@/app/types'
 
-// Pairs: hearts<->diamonds (red), clubs<->spades (black)
+// Pairs: hearts<->clubs (same value = same pair)
 const PAIR_MAP: Record<Suit, Suit> = {
-  hearts: 'diamonds',
-  diamonds: 'hearts',
-  clubs: 'spades',
-  spades: 'clubs',
+  hearts: 'clubs',
+  clubs: 'hearts',
+  diamonds: 'spades',
+  spades: 'diamonds',
 }
 
 const VALUES: CardValue[] = [2, 3, 4, 5, 6, 7, 8, 9, 10, 'J', 'Q', 'K', 'A']
@@ -40,10 +40,8 @@ export function drawCardPairs(numPlayers: number): [PokerCard, PokerCard][] {
   const values = shuffle(VALUES).slice(0, numPairs)
 
   const pairs: [PokerCard, PokerCard][] = values.map((value) => {
-    // Use hearts + diamonds as the pairing suits (red pair)
-    // For more than 13 pairs we'd need black suits too, but 13 covers up to 26 players
-    const cardA: PokerCard = { suit: 'hearts', value, pairSuit: 'diamonds' }
-    const cardB: PokerCard = { suit: 'diamonds', value, pairSuit: 'hearts' }
+    const cardA: PokerCard = { suit: 'hearts', value, pairSuit: 'clubs' }
+    const cardB: PokerCard = { suit: 'clubs', value, pairSuit: 'hearts' }
     return [cardA, cardB]
   })
 
@@ -81,5 +79,5 @@ export function suitSymbol(suit: Suit): string {
 }
 
 export function suitColor(suit: Suit): string {
-  return suit === 'hearts' || suit === 'diamonds' ? '#ef4444' : '#1f2937'
+  return suit === 'hearts' ? '#ef4444' : '#1f2937'
 }
