@@ -258,20 +258,27 @@ function renderDraw(){
     <h1 style="text-align:center;color:#4ade80;font-size:22px;font-weight:700;margin-bottom:4px">${esc(t.name)}</h1>
     <p style="text-align:center;color:#6b7280;margin-bottom:24px;font-size:15px">${phLbl[ph]||''}</p>
 
-    ${(ph==='revealing'||ph==='pairs')?`<div class="${t.players.length<=4?'grid4':'grid2'}" style="margin-bottom:20px">
-      ${t.players.map((p,i)=>{const a=t.ca.find(x=>x.playerId===p.id);const rev=i<rc;return`<div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-        ${av(p.name,p.color,'sm')}
-        <p style="font-size:11px;font-weight:600;text-align:center;color:#fff;line-height:1.2">${esc(p.name)}</p>
+    ${(ph==='revealing'||ph==='pairs')?`<div class="grid2" style="margin-bottom:20px">
+      ${t.players.map((p,i)=>{const a=t.ca.find(x=>x.playerId===p.id);const rev=i<rc;return`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:#111827;border:1px solid #374151;border-radius:12px;padding:10px 12px">
+        <div style="display:flex;align-items:center;gap:8px;min-width:0">
+          ${av(p.name,p.color,'sm')}
+          <span style="font-size:12px;font-weight:600;color:#fff;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${esc(p.name)}</span>
+        </div>
         ${rev&&a?cardHTML(a.card,true):cardBackHTML(true)}
       </div>`}).join('')}
     </div>`:''}
 
     ${ph==='pairs'?`<h2 style="color:#facc15;font-size:17px;font-weight:700;text-align:center;margin-bottom:14px">🎴 Parejas del sorteo</h2>
-    ${pairs.map(({pA,pB,cA,cB},i)=>`<div class="pair-row su">
-      <span style="color:#facc15;font-weight:700;font-size:15px;width:24px">P${i+1}</span>
-      <div class="row flex1">${av(pA.name,pA.color,'sm')}<span style="font-size:12px;font-weight:500;${''}">${esc(pA.name)}</span>${cA?cardHTML(cA,true):''}</div>
-      <span style="color:#4ade80;font-weight:700;font-size:16px;flex-shrink:0">+</span>
-      <div class="row flex1">${av(pB.name,pB.color,'sm')}<span style="font-size:12px;font-weight:500">${esc(pB.name)}</span>${cB?cardHTML(cB,true):''}</div>
+    ${pairs.map(({pA,pB,cA,cB},i)=>`<div class="pair-row su" style="flex-direction:column;gap:10px">
+      <span style="color:#facc15;font-weight:700;font-size:13px;align-self:flex-start">Pareja ${i+1}</span>
+      <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+        <div style="display:flex;align-items:center;gap:8px">${av(pA.name,pA.color,'sm')}<span style="font-size:13px;font-weight:600">${esc(pA.name)}</span></div>
+        ${cA?cardHTML(cA,true):''}
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+        <div style="display:flex;align-items:center;gap:8px">${av(pB.name,pB.color,'sm')}<span style="font-size:13px;font-weight:600">${esc(pB.name)}</span></div>
+        ${cB?cardHTML(cB,true):''}
+      </div>
     </div>`).join('')}
     <div style="text-align:center;margin-top:18px"><button class="btn btn-y" onclick="S.drawPhase='matches';render()" style="width:auto;padding:12px 28px">Ver partidos Ronda 1 →</button></div>`:''}
 
