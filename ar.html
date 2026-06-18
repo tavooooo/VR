@@ -14,145 +14,107 @@
 
   <style>
     :root {
-      --bg: #0f1410; --parchment: #f4e9d0; --parchment-dim: #cdbf9f;
-      --gold: #c9a227; --gold-soft: #d9bf63; --border: #3a4a32;
+      --bg:#0f1410; --parchment:#f4e9d0; --parchment-dim:#cdbf9f;
+      --gold:#c9a227; --gold-soft:#d9bf63; --border:#3a4a32;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    html, body { height:100%; }
     body {
-      font-family: "Inter", "Noto Sans SC", sans-serif;
-      background: var(--bg); color: var(--parchment);
-      min-height: 100dvh; overflow: hidden; -webkit-font-smoothing: antialiased;
+      font-family:"Inter","Noto Sans SC",sans-serif; color:var(--parchment);
+      background:var(--bg); min-height:100dvh; overflow:hidden; -webkit-font-smoothing:antialiased;
     }
 
-    model-viewer {
-      width: 100vw; height: 100dvh; display: block;
-      --poster-color: transparent;
+    /* Layer 0a: themed backdrop (shown until camera starts) */
+    .backdrop {
+      position:fixed; inset:0; z-index:0;
       background:
         radial-gradient(120% 80% at 50% 0%, #22321f 0%, transparent 55%),
         radial-gradient(100% 80% at 50% 100%, #141f18 0%, transparent 60%),
         var(--bg);
     }
+    /* Layer 0b: live camera feed */
+    #cam {
+      position:fixed; inset:0; width:100%; height:100%;
+      object-fit:cover; z-index:0; background:#000; display:none;
+    }
+    body.cam-on #cam { display:block; }
+    body.cam-on .backdrop { display:none; }
 
-    /* ---- Top bar ---- */
+    /* Layer 1: the 3D model, transparent background so the layer behind shows */
+    model-viewer {
+      position:fixed; inset:0; width:100vw; height:100dvh; z-index:1;
+      background:transparent; --poster-color:transparent;
+    }
+
+    /* Top bar */
     .topbar {
-      position: fixed; top: 0; left: 0; right: 0;
-      display: flex; align-items: center; gap: 12px;
-      padding: max(16px, env(safe-area-inset-top)) 18px 14px;
-      background: linear-gradient(180deg, rgba(15,20,16,.9), transparent);
-      z-index: 25;
+      position:fixed; top:0; left:0; right:0; z-index:5;
+      display:flex; align-items:center; gap:12px;
+      padding:max(16px,env(safe-area-inset-top)) 18px 14px;
+      background:linear-gradient(180deg, rgba(15,20,16,.9), transparent);
     }
+    body.cam-on .topbar { background:linear-gradient(180deg, rgba(0,0,0,.55), transparent); }
     .back {
-      display: inline-flex; align-items: center; gap: 8px;
-      min-height: 44px; padding: 8px 14px 8px 10px;
-      color: var(--parchment); text-decoration: none;
-      background: rgba(30,42,32,.7); border: 1px solid var(--border);
-      border-radius: 999px; font-size: .85rem; font-weight: 500;
-      backdrop-filter: blur(8px);
+      display:inline-flex; align-items:center; gap:8px; min-height:44px;
+      padding:8px 14px 8px 10px; color:var(--parchment); text-decoration:none;
+      background:rgba(30,42,32,.7); border:1px solid var(--border);
+      border-radius:999px; font-size:.85rem; font-weight:500; backdrop-filter:blur(8px);
     }
-    .back svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
+    .back svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2; }
     .topbar .title {
-      font-family: "Cinzel", serif; font-size: 1.05rem; font-weight: 600;
-      letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      font-family:"Cinzel",serif; font-size:1.05rem; font-weight:600; letter-spacing:.02em;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
-    .lang-zh .topbar .title, .lang-zh .sheet-name { font-family: "Noto Serif SC", serif; }
+    .lang-zh .topbar .title { font-family:"Noto Serif SC",serif; }
 
-    /* ---- Bottom controls (fixed, so the whole character stays visible) ----
-       The AR button is slotted INSIDE <model-viewer> (required for it to
-       trigger AR) and only positioned with CSS — never moved in the DOM. */
-    .name-chip {
-      position: fixed; left: 50%; transform: translateX(-50%);
-      bottom: calc(150px + env(safe-area-inset-bottom)); z-index: 24;
-      display: inline-flex; align-items: center; gap: 10px;
-      max-width: 92vw;
-      padding: 8px 8px 8px 16px;
-      background: rgba(20,28,22,.78); border: 1px solid var(--border);
-      border-radius: 999px; backdrop-filter: blur(10px);
-    }
-    .name-chip .nm {
-      font-family: "Cinzel", serif; font-weight: 600; font-size: .98rem;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .lang-zh .name-chip .nm { font-family: "Noto Serif SC", serif; }
-    .info-btn {
-      flex: 0 0 auto;
-      width: 34px; height: 34px; border-radius: 50%;
-      display: grid; place-items: center;
-      background: rgba(201,162,39,.14); border: 1px solid var(--border);
-      color: var(--gold-soft); cursor: pointer;
-    }
-    .info-btn svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 2; }
-
-    /* The model-viewer AR button is slotted and styled as the CTA */
+    /* Bottom controls */
     .ar-cta {
-      position: fixed; left: 50%; transform: translateX(-50%);
-      bottom: calc(84px + env(safe-area-inset-bottom)); z-index: 24;
-      display: inline-flex; align-items: center; justify-content: center; gap: 11px;
-      font-family: inherit; font-size: 1.05rem; font-weight: 600;
-      color: #1a1407; cursor: pointer;
-      background: linear-gradient(180deg, var(--gold) 0%, #b4901f 100%);
-      border: 1px solid var(--gold-soft); border-radius: 999px;
-      padding: 16px 30px; min-height: 56px; max-width: 92vw;
-      box-shadow: 0 12px 34px rgba(201,162,39,.4);
+      position:fixed; left:50%; transform:translateX(-50%);
+      bottom:calc(64px + env(safe-area-inset-bottom)); z-index:6;
+      display:inline-flex; align-items:center; justify-content:center; gap:11px;
+      font-family:inherit; font-size:1.05rem; font-weight:600; color:#1a1407; cursor:pointer;
+      background:linear-gradient(180deg, var(--gold) 0%, #b4901f 100%);
+      border:1px solid var(--gold-soft); border-radius:999px;
+      padding:16px 30px; min-height:56px; max-width:92vw;
+      box-shadow:0 12px 34px rgba(201,162,39,.4);
     }
-    .ar-cta svg { width: 22px; height: 22px; stroke: #1a1407; fill: none; stroke-width: 2; }
+    .ar-cta svg { width:22px; height:22px; stroke:#1a1407; fill:none; stroke-width:2; }
+    /* When camera is on the button becomes a subtle "close" pill */
+    body.cam-on .ar-cta {
+      background:rgba(20,28,22,.7); color:var(--parchment); border-color:var(--border);
+      backdrop-filter:blur(10px); box-shadow:none; font-weight:500;
+    }
+    body.cam-on .ar-cta svg { stroke:var(--parchment); }
+
     .real-hint {
-      position: fixed; left: 50%; transform: translateX(-50%);
-      bottom: calc(50px + env(safe-area-inset-bottom)); z-index: 24;
-      display: flex; align-items: center; gap: 7px;
-      color: var(--parchment-dim); font-size: .78rem; font-weight: 300;
-      text-align: center; max-width: 90vw;
+      position:fixed; left:50%; transform:translateX(-50%);
+      bottom:calc(30px + env(safe-area-inset-bottom)); z-index:6;
+      display:flex; align-items:center; gap:7px; max-width:90vw; text-align:center;
+      color:var(--parchment-dim); font-size:.78rem; font-weight:300;
     }
-    .real-hint svg { width: 14px; height: 14px; stroke: var(--gold-soft); fill: none; stroke-width: 1.7; flex: 0 0 auto; }
+    body.cam-on .real-hint { display:none; }
+    .real-hint svg { width:14px; height:14px; stroke:var(--gold-soft); fill:none; stroke-width:1.7; flex:0 0 auto; }
 
-    /* ---- Story panel (hidden by default, opt-in) ---- */
-    .scrim {
-      position: fixed; inset: 0; z-index: 30;
-      background: rgba(8,11,9,.55); backdrop-filter: blur(2px);
-      opacity: 0; pointer-events: none; transition: opacity .25s ease;
-    }
-    .scrim.open { opacity: 1; pointer-events: auto; }
-    .story {
-      position: fixed; left: 0; right: 0; bottom: 0; z-index: 31;
-      transform: translateY(100%); transition: transform .3s cubic-bezier(.2,.7,.2,1);
-      padding: 0 14px calc(16px + env(safe-area-inset-bottom));
-    }
-    .story.open { transform: translateY(0); }
-    .story-card {
-      max-width: 640px; margin: 0 auto;
-      background: linear-gradient(180deg, rgba(40,54,38,.97), rgba(22,30,24,.99));
-      border: 1px solid var(--border); border-top-left-radius: 22px; border-top-right-radius: 22px;
-      padding: 10px 20px 22px; box-shadow: 0 -10px 40px rgba(0,0,0,.55);
-    }
-    .grab { width: 40px; height: 4px; border-radius: 2px; background: #5a6b4c; margin: 0 auto 16px; }
-    .sheet-place { font-size: .7rem; letter-spacing: .2em; text-transform: uppercase; color: var(--gold-soft); margin-bottom: 6px; }
-    .sheet-name { font-family: "Cinzel", serif; font-size: 1.5rem; font-weight: 700; margin-bottom: 10px; }
-    .sheet-story { color: var(--parchment-dim); font-weight: 300; line-height: 1.7; font-size: .96rem; }
-    .story-close {
-      margin-top: 18px; width: 100%; min-height: 46px;
-      background: rgba(201,162,39,.12); border: 1px solid var(--border);
-      color: var(--gold-soft); border-radius: 12px; font-family: inherit;
-      font-size: .9rem; font-weight: 500; cursor: pointer;
-    }
-
-    /* ---- Loading ---- */
+    /* Loading */
     .loader {
-      position: absolute; inset: 0; z-index: 20;
-      display: grid; place-items: center; background: var(--bg);
-      transition: opacity .5s ease;
+      position:fixed; inset:0; z-index:10; display:grid; place-items:center;
+      background:var(--bg); transition:opacity .5s ease;
     }
-    .loader.hidden { opacity: 0; pointer-events: none; }
+    .loader.hidden { opacity:0; pointer-events:none; }
     .loader .ring {
-      width: 54px; height: 54px; border-radius: 50%;
-      border: 2px solid rgba(201,162,39,.25); border-top-color: var(--gold);
-      animation: spin 1s linear infinite;
+      width:54px; height:54px; border-radius:50%;
+      border:2px solid rgba(201,162,39,.25); border-top-color:var(--gold);
+      animation:spin 1s linear infinite;
     }
-    .loader .txt { margin-top: 18px; font-family: "Cinzel", serif; letter-spacing: .12em; color: var(--gold-soft); font-size: .9rem; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    @media (prefers-reduced-motion: reduce) { .loader .ring { animation: none; } * { transition: none !important; } }
+    .loader .txt { margin-top:18px; font-family:"Cinzel",serif; letter-spacing:.12em; color:var(--gold-soft); font-size:.9rem; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    @media (prefers-reduced-motion:reduce){ .loader .ring{ animation:none; } * { transition:none !important; } }
   </style>
 </head>
 <body>
+  <div class="backdrop"></div>
+  <video id="cam" playsinline autoplay muted></video>
+
   <div class="topbar">
     <a class="back" id="backBtn" href="index.html">
       <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
@@ -163,9 +125,6 @@
 
   <model-viewer
     id="mv"
-    ar
-    ar-modes="webxr scene-viewer quick-look"
-    ar-scale="fixed"
     camera-controls
     auto-rotate
     shadow-intensity="1"
@@ -173,35 +132,14 @@
     exposure="1"
     alt="Hobbiton AR character"></model-viewer>
 
-  <!-- Our own AR button — always visible, calls activateAR() directly so it
-       never depends on model-viewer auto-hiding the slotted default button. -->
   <button class="ar-cta" id="arBtn">
-    <svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg>
+    <svg id="arIcon" viewBox="0 0 24 24"><path d="M3 7h3l2-2h8l2 2h3v12H3z"/><circle cx="12" cy="13" r="3.4"/></svg>
     <span id="arLabel">See in your real world</span>
   </button>
 
-  <!-- Bottom controls (the gold AR button is slotted inside model-viewer above) -->
-  <div class="name-chip">
-    <span class="nm" id="chipName">Frodo</span>
-    <button class="info-btn" id="infoBtn" aria-label="Story">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
-    </button>
-  </div>
   <div class="real-hint">
-    <svg viewBox="0 0 24 24"><path d="M3 7h3l2-2h8l2 2h3v12H3z"/><circle cx="12" cy="13" r="3.2"/></svg>
-    <span id="realHint">Opens your camera — place the character in the real scene</span>
-  </div>
-
-  <!-- Story panel -->
-  <div class="scrim" id="scrim"></div>
-  <div class="story" id="story">
-    <div class="story-card">
-      <div class="grab"></div>
-      <div class="sheet-place" id="place"></div>
-      <h2 class="sheet-name" id="name"></h2>
-      <p class="sheet-story" id="story-text"></p>
-      <button class="story-close" id="storyClose">✕</button>
-    </div>
+    <svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/></svg>
+    <span id="realHint">Opens your camera — the character appears in the real scene</span>
   </div>
 
   <div class="loader" id="loader">
@@ -225,10 +163,6 @@
 
     // Copy
     document.getElementById("title").textContent = info.name;
-    document.getElementById("chipName").textContent = info.name;
-    document.getElementById("place").textContent = info.place;
-    document.getElementById("name").textContent = info.name;
-    document.getElementById("story-text").textContent = info.story;
     document.getElementById("backLabel").textContent = tr.back;
     document.getElementById("arLabel").textContent = tr.arCta;
     document.getElementById("realHint").textContent = tr.realBgHint;
@@ -240,37 +174,50 @@
     mv.setAttribute("scale", point.scale || "1 1 1");
     mv.setAttribute("alt", info.name);
 
-    // Story panel toggle
-    const scrim = document.getElementById("scrim");
-    const story = document.getElementById("story");
-    function openStory(o) { scrim.classList.toggle("open", o); story.classList.toggle("open", o); }
-    document.getElementById("infoBtn").addEventListener("click", () => openStory(true));
-    document.getElementById("storyClose").addEventListener("click", () => openStory(false));
-    scrim.addEventListener("click", () => openStory(false));
-
-    // AR launch — call activateAR() directly on tap (a user gesture)
-    const arBtn = document.getElementById("arBtn");
-    arBtn.addEventListener("click", () => {
-      if (mv.canActivateAR) {
-        mv.activateAR();
-      } else {
-        // AR not available on this device/browser (e.g. desktop)
-        document.getElementById("realHint").textContent = tr.notSupported;
-      }
-    });
-
-    // Loader + AR availability feedback
+    // Loader
     const loader = document.getElementById("loader");
     const hideLoader = () => loader.classList.add("hidden");
-    mv.addEventListener("load", () => {
-      hideLoader();
-      // If AR truly isn't supported, tell the user instead of a dead button
-      if (mv.canActivateAR === false) {
-        document.getElementById("realHint").textContent = tr.notSupported;
-      }
-    });
-    mv.addEventListener("error", () => { document.getElementById("loaderTxt").textContent = tr.notSupported; });
+    mv.addEventListener("load", hideLoader);
     setTimeout(hideLoader, 12000);
+
+    // --- Live camera background (real AR feel, fully in-browser) ---
+    const cam = document.getElementById("cam");
+    const arBtn = document.getElementById("arBtn");
+    const arLabel = document.getElementById("arLabel");
+    const realHint = document.getElementById("realHint");
+    let streaming = false;
+
+    async function startCam() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } },
+          audio: false,
+        });
+        cam.srcObject = stream;
+        await cam.play();
+        document.body.classList.add("cam-on");
+        streaming = true;
+        arLabel.textContent = tr.camExit;
+        // stop spinning so the character sits still over the real scene
+        mv.removeAttribute("auto-rotate");
+      } catch (e) {
+        realHint.textContent = tr.camDenied;
+        realHint.style.display = "flex";
+      }
+    }
+
+    function stopCam() {
+      const s = cam.srcObject;
+      if (s) s.getTracks().forEach((tk) => tk.stop());
+      cam.srcObject = null;
+      document.body.classList.remove("cam-on");
+      streaming = false;
+      arLabel.textContent = tr.arCta;
+      mv.setAttribute("auto-rotate", "");
+    }
+
+    arBtn.addEventListener("click", () => (streaming ? stopCam() : startCam()));
+    window.addEventListener("pagehide", stopCam);
   </script>
 </body>
 </html>
