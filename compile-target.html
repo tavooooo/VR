@@ -29,8 +29,9 @@
     .sub { color:var(--parchment-dim); font-weight:300; margin-top:8px; line-height:1.6; font-size:.95rem; }
 
     .tips { margin:18px 0; padding:16px 18px; border-radius:14px; background:rgba(40,54,38,.5); border:1px solid var(--border); }
-    .tips li { list-style:none; display:flex; gap:10px; padding:5px 0; font-size:.88rem; color:var(--parchment-dim); font-weight:300; }
-    .tips svg { width:16px; height:16px; flex:0 0 auto; stroke:var(--green); fill:none; stroke-width:2; margin-top:2px; }
+    .tips li { list-style:none; display:flex; align-items:flex-start; gap:10px; padding:5px 0; font-size:.9rem; color:var(--parchment-dim); font-weight:300; line-height:1.5; }
+    .tips li span { flex:1; min-width:0; }
+    .tips svg { width:16px; height:16px; flex:0 0 auto; stroke:var(--green); fill:none; stroke-width:2; margin-top:3px; }
 
     .drop {
       margin-top:8px; border:1.5px dashed var(--border); border-radius:16px;
@@ -70,15 +71,15 @@
     <p class="sub">Genera el archivo <b>targets.mind</b> a partir de una foto de la puerta. Todo ocurre en tu dispositivo. Luego subí ese archivo a <b>assets/targets.mind</b> (o pasámelo y lo agrego).</p>
 
     <ul class="tips">
-      <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Foto <b>de frente</b> a la puerta, derecha (no rotada).</li>
-      <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Buena luz, nítida, sin reflejos fuertes.</li>
-      <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Que entre <b>toda la puerta</b> con sus herrajes.</li>
+      <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span>Foto <b>de frente</b> a la puerta, derecha (no rotada).</span></li>
+      <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span>Buena luz, nítida, sin reflejos fuertes.</span></li>
+      <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span>Que entre <b>toda la puerta</b> con sus herrajes.</span></li>
     </ul>
 
     <label class="drop" id="drop">
       <svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 20h14"/></svg>
-      <p id="dropTxt">Tocá para tomar o elegir la foto de la puerta</p>
-      <input type="file" id="file" accept="image/*" capture="environment" />
+      <p id="dropTxt">Tocá para elegir la foto de la puerta (galería o cámara)</p>
+      <input type="file" id="file" accept="image/*" />
     </label>
 
     <img id="preview" alt="Vista previa" />
