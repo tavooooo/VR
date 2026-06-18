@@ -80,6 +80,11 @@
     }
     .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
     .note { margin-top:16px; font-size:.8rem; color:var(--parchment-dim); font-weight:300; line-height:1.6; }
+    .help { margin-top:16px; padding:14px 16px; border-radius:12px; background:rgba(168,68,42,.12); border:1px solid #7a3a2a; font-size:.86rem; line-height:1.6; color:var(--parchment); }
+    .help strong { color:var(--gold-soft); }
+    .help ol { margin:10px 0 0 18px; padding:0; }
+    .help li { margin:6px 0; color:var(--parchment-dim); }
+    .help b { color:var(--parchment); }
   </style>
 </head>
 <body>
@@ -118,7 +123,18 @@
       </button>
 
       <div class="snippet" id="snippet" style="display:none"></div>
-      <p class="note">Consejo: para máxima precisión, esperá 10-20 s sin moverte. Cuanto menor el ± de precisión, mejor quedará anclado el dragón.</p>
+
+      <div class="help" id="help" style="display:none">
+        <strong>Tienes que permitir la ubicación en Safari:</strong>
+        <ol>
+          <li>Abre <b>Ajustes</b> → <b>Privacidad y seguridad</b> → <b>Localización</b> → que esté <b>activada</b>.</li>
+          <li>En la misma lista, toca <b>Safari</b> (o tu navegador) → elige <b>Al usar la app</b>.</li>
+          <li>Vuelve a esta página y toca de nuevo <b>Leer mi ubicación</b> → cuando pregunte, toca <b>Permitir</b>.</li>
+          <li>Si no vuelve a preguntar: en la barra de Safari toca <b>“aA”</b> → <b>Ajustes del sitio web</b> → <b>Ubicación</b> → <b>Permitir</b>.</li>
+        </ol>
+      </div>
+
+      <p class="note">Consejo: para máxima precisión, espera 10-20 s sin moverte. Mientras menor el ± de precisión, mejor queda anclado el dragón.</p>
     </div>
   </div>
 
@@ -152,8 +168,15 @@
     }
 
     function fail(err){
-      $("accTxt").textContent = "No se pudo leer el GPS: " + err.message;
       $("dot").className = "dot bad";
+      if (err && err.code === 1) {            // PERMISSION_DENIED
+        $("accTxt").textContent = "Ubicación bloqueada. Sigue los pasos de abajo y reintenta.";
+        $("help").style.display = "block";
+      } else if (err && err.code === 3) {     // TIMEOUT
+        $("accTxt").textContent = "Tardó demasiado. Sal a cielo abierto y toca de nuevo.";
+      } else {
+        $("accTxt").textContent = "No se pudo leer el GPS: " + (err && err.message ? err.message : "error");
+      }
     }
 
     $("readBtn").addEventListener("click", () => {
