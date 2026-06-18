@@ -171,14 +171,14 @@
     shadow-intensity="1"
     environment-image="neutral"
     exposure="1"
-    alt="Hobbiton AR character">
+    alt="Hobbiton AR character"></model-viewer>
 
-    <!-- Slotted AR button = primary CTA. Lives inside the dock visually. -->
-    <button slot="ar-button" class="ar-cta" id="arBtn">
-      <svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg>
-      <span id="arLabel">See in your real world</span>
-    </button>
-  </model-viewer>
+  <!-- Our own AR button — always visible, calls activateAR() directly so it
+       never depends on model-viewer auto-hiding the slotted default button. -->
+  <button class="ar-cta" id="arBtn">
+    <svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg>
+    <span id="arLabel">See in your real world</span>
+  </button>
 
   <!-- Bottom controls (the gold AR button is slotted inside model-viewer above) -->
   <div class="name-chip">
@@ -248,10 +248,27 @@
     document.getElementById("storyClose").addEventListener("click", () => openStory(false));
     scrim.addEventListener("click", () => openStory(false));
 
-    // Loader
+    // AR launch — call activateAR() directly on tap (a user gesture)
+    const arBtn = document.getElementById("arBtn");
+    arBtn.addEventListener("click", () => {
+      if (mv.canActivateAR) {
+        mv.activateAR();
+      } else {
+        // AR not available on this device/browser (e.g. desktop)
+        document.getElementById("realHint").textContent = tr.notSupported;
+      }
+    });
+
+    // Loader + AR availability feedback
     const loader = document.getElementById("loader");
     const hideLoader = () => loader.classList.add("hidden");
-    mv.addEventListener("load", hideLoader);
+    mv.addEventListener("load", () => {
+      hideLoader();
+      // If AR truly isn't supported, tell the user instead of a dead button
+      if (mv.canActivateAR === false) {
+        document.getElementById("realHint").textContent = tr.notSupported;
+      }
+    });
     mv.addEventListener("error", () => { document.getElementById("loaderTxt").textContent = tr.notSupported; });
     setTimeout(hideLoader, 12000);
   </script>
