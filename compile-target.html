@@ -109,10 +109,12 @@
     const dropTxt = document.getElementById("dropTxt");
     let imgEl = null;
 
-    // --- Load the MindAR library with a CDN fallback ---
+    // --- Load the MindAR library robustly (handles both UMD and ESM builds,
+    //     across two CDNs) ---
     const CDNS = [
       "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.js",
       "https://unpkg.com/mind-ar@1.2.5/dist/mindar-image.prod.js",
+      "https://cdn.jsdelivr.net/npm/mind-ar@1.2.3/dist/mindar-image.prod.js",
     ];
     function loadScript(src) {
       return new Promise((res, rej) => {
@@ -121,15 +123,26 @@
         document.head.appendChild(s);
       });
     }
-    function getCompiler() {
+    function getGlobalCompiler() {
       const M = window.MINDAR;
       return (M && M.IMAGE && M.IMAGE.Compiler) || (M && M.Compiler) || null;
     }
+    async function tryGetCompiler(url) {
+      // 1) classic <script> tag — sets window.MINDAR for UMD/IIFE builds
+      try { await loadScript(url); const c = getGlobalCompiler(); if (c) return c; } catch (e) {}
+      // 2) ES-module import — for builds that export Compiler / set the global
+      try {
+        const m = await import(url);
+        const c = (m && m.Compiler) || (m && m.default && m.default.Compiler) || getGlobalCompiler();
+        if (c) return c;
+      } catch (e) {}
+      return null;
+    }
     async function ensureLib() {
-      if (getCompiler()) return getCompiler();
+      if (getGlobalCompiler()) return getGlobalCompiler();
       for (const url of CDNS) {
-        try { await loadScript(url); } catch (e) { continue; }
-        if (getCompiler()) return getCompiler();
+        const c = await tryGetCompiler(url);
+        if (c) return c;
       }
       return null;
     }
@@ -172,7 +185,7 @@
       try {
         const Compiler = await ensureLib();
         if (!Compiler) {
-          barTxt.textContent = "No se pudo cargar la librería. Revisá tu conexión y reintentá.";
+          barTxt.textContent = "No se pudo cargar la librería MindAR. Revisa tu conexión y vuelve a tocar Compilar.";
           compileBtn.disabled = false;
           return;
         }
