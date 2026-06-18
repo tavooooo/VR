@@ -10,8 +10,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
 
-  <!-- MindAR image compiler (runs entirely in your browser) -->
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.js"></script>
 
   <style>
     :root { --bg:#0f1410; --parchment:#f4e9d0; --parchment-dim:#cdbf9f; --gold:#c9a227; --gold-soft:#d9bf63; --green:#6b8f4e; --border:#3a4a32; }
@@ -111,27 +109,76 @@
     const dropTxt = document.getElementById("dropTxt");
     let imgEl = null;
 
-    fileInput.addEventListener("change", async (e) => {
+    // --- Load the MindAR library with a CDN fallback ---
+    const CDNS = [
+      "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.js",
+      "https://unpkg.com/mind-ar@1.2.5/dist/mindar-image.prod.js",
+    ];
+    function loadScript(src) {
+      return new Promise((res, rej) => {
+        const s = document.createElement("script");
+        s.src = src; s.onload = res; s.onerror = () => rej(new Error("load " + src));
+        document.head.appendChild(s);
+      });
+    }
+    function getCompiler() {
+      const M = window.MINDAR;
+      return (M && M.IMAGE && M.IMAGE.Compiler) || (M && M.Compiler) || null;
+    }
+    async function ensureLib() {
+      if (getCompiler()) return getCompiler();
+      for (const url of CDNS) {
+        try { await loadScript(url); } catch (e) { continue; }
+        if (getCompiler()) return getCompiler();
+      }
+      return null;
+    }
+    // Warm up the library as soon as the page opens
+    ensureLib();
+
+    // --- Downscale big phone photos so compiling is fast & reliable ---
+    function downscale(img, maxDim) {
+      const { naturalWidth: w, naturalHeight: h } = img;
+      const scale = Math.min(1, maxDim / Math.max(w, h));
+      if (scale === 1) return img;
+      const c = document.createElement("canvas");
+      c.width = Math.round(w * scale); c.height = Math.round(h * scale);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      const out = new Image();
+      out.src = c.toDataURL("image/jpeg", 0.92);
+      return new Promise((r) => { out.onload = () => r(out); });
+    }
+
+    fileInput.addEventListener("change", (e) => {
       const f = e.target.files[0];
       if (!f) return;
       const url = URL.createObjectURL(f);
-      imgEl = new Image();
-      imgEl.onload = () => {
+      const probe = new Image();
+      probe.onload = () => {
+        imgEl = probe;
         preview.src = url; preview.style.display = "block";
         compileBtn.disabled = false;
         dropTxt.textContent = "Foto lista — tocá “Compilar”. (Tocá aquí para cambiarla)";
         done.style.display = "none";
       };
-      imgEl.src = url;
+      probe.src = url;
     });
 
     compileBtn.addEventListener("click", async () => {
       if (!imgEl) return;
       compileBtn.disabled = true;
       barWrap.style.display = "block";
+      barTxt.textContent = "Preparando…";
       try {
-        const compiler = new window.MINDAR.IMAGE.Compiler();
-        await compiler.compileImageTargets([imgEl], (progress) => {
+        const Compiler = await ensureLib();
+        if (!Compiler) {
+          barTxt.textContent = "No se pudo cargar la librería. Revisá tu conexión y reintentá.";
+          compileBtn.disabled = false;
+          return;
+        }
+        const img = await downscale(imgEl, 1280);
+        const compiler = new Compiler();
+        await compiler.compileImageTargets([img], (progress) => {
           const p = Math.round(progress);
           barFill.style.width = p + "%";
           barTxt.textContent = "Compilando… " + p + "%";
@@ -142,10 +189,11 @@
         a.href = URL.createObjectURL(blob);
         a.download = "targets.mind";
         document.body.appendChild(a); a.click(); a.remove();
-        barTxt.textContent = "Compilando… 100%";
+        barFill.style.width = "100%";
+        barTxt.textContent = "¡Compilado! 100%";
         done.style.display = "block";
       } catch (err) {
-        barTxt.textContent = "Error al compilar: " + err.message;
+        barTxt.textContent = "Error al compilar: " + (err && err.message ? err.message : err);
       } finally {
         compileBtn.disabled = false;
       }
