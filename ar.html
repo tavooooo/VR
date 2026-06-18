@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f1410" />
+  <title>Hobbiton AR</title>
+
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@300;400;500&family=Noto+Serif+SC:wght@600&family=Noto+Sans+SC:wght@300;400&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #0f1410; --parchment: #f4e9d0; --parchment-dim: #cdbf9f;
+      --gold: #c9a227; --gold-soft: #d9bf63; --border: #3a4a32;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: "Inter", "Noto Sans SC", sans-serif;
+      background: var(--bg); color: var(--parchment);
+      min-height: 100dvh; overflow: hidden; -webkit-font-smoothing: antialiased;
+    }
+    .lang-zh, .lang-zh model-viewer ~ * { }
+
+    model-viewer {
+      width: 100vw; height: 100dvh; display: block;
+      --poster-color: transparent;
+      background:
+        radial-gradient(120% 80% at 50% 0%, #22321f 0%, transparent 55%),
+        radial-gradient(100% 80% at 50% 100%, #141f18 0%, transparent 60%),
+        var(--bg);
+    }
+
+    /* ---- Top bar ---- */
+    .topbar {
+      position: fixed; top: 0; left: 0; right: 0;
+      display: flex; align-items: center; gap: 12px;
+      padding: max(16px, env(safe-area-inset-top)) 18px 14px;
+      background: linear-gradient(180deg, rgba(15,20,16,.92), transparent);
+      z-index: 20;
+    }
+    .back {
+      display: inline-flex; align-items: center; gap: 8px;
+      min-height: 44px; padding: 8px 14px 8px 10px;
+      color: var(--parchment); text-decoration: none;
+      background: rgba(30,42,32,.7); border: 1px solid var(--border);
+      border-radius: 999px; font-size: .85rem; font-weight: 500;
+      backdrop-filter: blur(8px);
+    }
+    .back svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
+    .topbar .title {
+      font-family: "Cinzel", serif; font-size: 1.05rem; font-weight: 600;
+      letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .lang-zh .topbar .title { font-family: "Noto Serif SC", serif; }
+
+    /* ---- Story sheet ---- */
+    .sheet {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+      padding: 22px 20px calc(20px + env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, transparent, rgba(15,20,16,.96)28%);
+    }
+    .sheet-card {
+      max-width: 640px; margin: 0 auto;
+      background: linear-gradient(180deg, rgba(40,54,38,.92), rgba(22,30,24,.96));
+      border: 1px solid var(--border); border-radius: 18px;
+      padding: 18px 18px 16px;
+      box-shadow: 0 -8px 40px rgba(0,0,0,.5);
+    }
+    .sheet-place {
+      font-size: .7rem; letter-spacing: .2em; text-transform: uppercase;
+      color: var(--gold-soft); margin-bottom: 6px;
+    }
+    .sheet-name {
+      font-family: "Cinzel", serif; font-size: 1.5rem; font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .lang-zh .sheet-name { font-family: "Noto Serif SC", serif; }
+    .sheet-story {
+      color: var(--parchment-dim); font-weight: 300; line-height: 1.65;
+      font-size: .95rem;
+    }
+    .hint {
+      display: flex; align-items: center; gap: 9px;
+      margin-top: 14px; padding-top: 13px; border-top: 1px solid rgba(58,74,50,.6);
+      color: var(--gold-soft); font-size: .82rem;
+    }
+    .hint svg { width: 18px; height: 18px; flex: 0 0 auto; stroke: currentColor; fill: none; stroke-width: 1.7; }
+
+    /* ---- AR button (model-viewer slot) ---- */
+    .ar-btn {
+      position: absolute; bottom: 200px; left: 50%; transform: translateX(-50%);
+      display: inline-flex; align-items: center; gap: 10px;
+      font-family: inherit; font-size: 1rem; font-weight: 600;
+      color: #1a1407; cursor: pointer;
+      background: linear-gradient(180deg, var(--gold) 0%, #b4901f 100%);
+      border: 1px solid var(--gold-soft); border-radius: 999px;
+      padding: 14px 26px; min-height: 52px;
+      box-shadow: 0 10px 30px rgba(201,162,39,.35);
+      z-index: 18;
+    }
+    .ar-btn svg { width: 20px; height: 20px; stroke: #1a1407; fill: none; stroke-width: 2; }
+    .ar-btn[disabled] { opacity: .5; }
+
+    /* ---- Loading ---- */
+    .loader {
+      position: absolute; inset: 0; z-index: 15;
+      display: grid; place-items: center;
+      background: var(--bg); transition: opacity .5s ease;
+    }
+    .loader.hidden { opacity: 0; pointer-events: none; }
+    .loader .ring {
+      width: 54px; height: 54px; border-radius: 50%;
+      border: 2px solid rgba(201,162,39,.25); border-top-color: var(--gold);
+      animation: spin 1s linear infinite;
+    }
+    .loader .txt {
+      margin-top: 18px; font-family: "Cinzel", serif; letter-spacing: .12em;
+      color: var(--gold-soft); font-size: .9rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .loader .ring { animation: none; } }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="back" id="backBtn" href="index.html">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+      <span id="backLabel">Map</span>
+    </a>
+    <span class="title" id="title">Hobbiton</span>
+  </div>
+
+  <model-viewer
+    id="mv"
+    ar
+    ar-modes="webxr scene-viewer quick-look"
+    ar-scale="fixed"
+    camera-controls
+    auto-rotate
+    shadow-intensity="1"
+    environment-image="neutral"
+    exposure="1"
+    alt="Hobbiton AR character">
+    <button slot="ar-button" class="ar-btn" id="arBtn">
+      <svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg>
+      <span id="arLabel">View in AR</span>
+    </button>
+  </model-viewer>
+
+  <div class="loader" id="loader">
+    <div style="text-align:center">
+      <div class="ring"></div>
+      <div class="txt" id="loaderTxt">Summoning…</div>
+    </div>
+  </div>
+
+  <div class="sheet">
+    <div class="sheet-card">
+      <div class="sheet-place" id="place"></div>
+      <h2 class="sheet-name" id="name"></h2>
+      <p class="sheet-story" id="story"></p>
+      <div class="hint">
+        <svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/></svg>
+        <span id="hint"></span>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const id = params.get("point") || "frodo";
+    const lang = Store.lang;
+    const tr = t(lang);
+    const point = getPoint(id) || POINTS[0];
+    const info = tr.points[point.id];
+
+    if (lang === "zh") document.body.classList.add("lang-zh");
+    document.documentElement.lang = lang;
+
+    // Populate copy
+    document.getElementById("title").textContent = info.name;
+    document.getElementById("place").textContent = info.place;
+    document.getElementById("name").textContent = info.name;
+    document.getElementById("story").textContent = info.story;
+    document.getElementById("hint").textContent = tr.instrQr;
+    document.getElementById("backLabel").textContent = tr.back;
+    document.getElementById("arLabel").textContent = tr.start;
+    document.getElementById("loaderTxt").textContent = tr.loading;
+
+    // Configure model-viewer
+    const mv = document.getElementById("mv");
+    mv.setAttribute("src", point.model);
+    mv.setAttribute("scale", point.scale || "1 1 1");
+    mv.setAttribute("alt", info.name);
+
+    // Hide loader on load; also fail-safe after 12s
+    const loader = document.getElementById("loader");
+    function hideLoader() { loader.classList.add("hidden"); }
+    mv.addEventListener("load", hideLoader);
+    mv.addEventListener("error", () => {
+      document.getElementById("loaderTxt").textContent = tr.notSupported;
+    });
+    setTimeout(hideLoader, 12000);
+  </script>
+</body>
+</html>
