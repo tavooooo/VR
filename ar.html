@@ -67,33 +67,33 @@
     }
     .lang-zh .topbar .title { font-family:"Noto Serif SC",serif; }
 
-    /* Bottom controls */
+    /* Compact control, anchored to the bottom-right corner */
     .ar-cta {
-      position:fixed; left:50%; transform:translateX(-50%);
-      bottom:calc(64px + env(safe-area-inset-bottom)); z-index:6;
-      display:inline-flex; align-items:center; justify-content:center; gap:11px;
-      font-family:inherit; font-size:1.05rem; font-weight:600; color:#1a1407; cursor:pointer;
+      position:fixed; right:16px; bottom:calc(20px + env(safe-area-inset-bottom)); z-index:6;
+      display:inline-flex; align-items:center; gap:8px;
+      font-family:inherit; font-size:.85rem; font-weight:600; color:#1a1407; cursor:pointer;
       background:linear-gradient(180deg, var(--gold) 0%, #b4901f 100%);
       border:1px solid var(--gold-soft); border-radius:999px;
-      padding:16px 30px; min-height:56px; max-width:92vw;
-      box-shadow:0 12px 34px rgba(201,162,39,.4);
+      padding:10px 16px; min-height:44px; max-width:80vw;
+      box-shadow:0 8px 22px rgba(201,162,39,.35);
     }
-    .ar-cta svg { width:22px; height:22px; stroke:#1a1407; fill:none; stroke-width:2; }
-    /* When camera is on the button becomes a subtle "close" pill */
+    .ar-cta svg { width:18px; height:18px; stroke:#1a1407; fill:none; stroke-width:2; flex:0 0 auto; }
+    /* When camera is on the button shrinks to a round icon-only close button */
     body.cam-on .ar-cta {
-      background:rgba(20,28,22,.7); color:var(--parchment); border-color:var(--border);
-      backdrop-filter:blur(10px); box-shadow:none; font-weight:500;
+      padding:0; width:44px; height:44px; justify-content:center; gap:0;
+      background:rgba(20,28,22,.6); color:var(--parchment); border-color:var(--border);
+      backdrop-filter:blur(10px); box-shadow:none;
     }
     body.cam-on .ar-cta svg { stroke:var(--parchment); }
+    body.cam-on .ar-cta #arLabel { display:none; }
 
     .real-hint {
-      position:fixed; left:50%; transform:translateX(-50%);
-      bottom:calc(30px + env(safe-area-inset-bottom)); z-index:6;
-      display:flex; align-items:center; gap:7px; max-width:90vw; text-align:center;
-      color:var(--parchment-dim); font-size:.78rem; font-weight:300;
+      position:fixed; left:16px; right:16px;
+      bottom:calc(28px + env(safe-area-inset-bottom)); z-index:6;
+      display:none; align-items:center; justify-content:center; gap:7px; text-align:center;
+      color:var(--parchment-dim); font-size:.8rem; font-weight:300;
     }
-    body.cam-on .real-hint { display:none; }
-    .real-hint svg { width:14px; height:14px; stroke:var(--gold-soft); fill:none; stroke-width:1.7; flex:0 0 auto; }
+    .real-hint svg { width:15px; height:15px; stroke:var(--bad,#a8442a); fill:none; stroke-width:1.8; flex:0 0 auto; }
 
     /* Loading */
     .loader {
@@ -183,9 +183,12 @@
     // --- Live camera background (real AR feel, fully in-browser) ---
     const cam = document.getElementById("cam");
     const arBtn = document.getElementById("arBtn");
-    const arLabel = document.getElementById("arLabel");
+    const arIcon = document.getElementById("arIcon");
     const realHint = document.getElementById("realHint");
     let streaming = false;
+
+    const ICON_CAM = '<path d="M3 7h3l2-2h8l2 2h3v12H3z"/><circle cx="12" cy="13" r="3.4"/>';
+    const ICON_X = '<path d="M6 6l12 12M18 6L6 18"/>';
 
     async function startCam() {
       try {
@@ -197,9 +200,9 @@
         await cam.play();
         document.body.classList.add("cam-on");
         streaming = true;
-        arLabel.textContent = tr.camExit;
-        // stop spinning so the character sits still over the real scene
-        mv.removeAttribute("auto-rotate");
+        arIcon.innerHTML = ICON_X;        // becomes a round close button
+        realHint.style.display = "none";
+        mv.removeAttribute("auto-rotate"); // sit still over the real scene
       } catch (e) {
         realHint.textContent = tr.camDenied;
         realHint.style.display = "flex";
@@ -212,7 +215,7 @@
       cam.srcObject = null;
       document.body.classList.remove("cam-on");
       streaming = false;
-      arLabel.textContent = tr.arCta;
+      arIcon.innerHTML = ICON_CAM;
       mv.setAttribute("auto-rotate", "");
     }
 
