@@ -18,15 +18,17 @@ POINTS = ["frodo", "gandalf"]
 
 BASE = sys.argv[1].rstrip("/") if len(sys.argv) > 1 else "https://tavooooo.github.io/VR"
 
-DARK = (15, 20, 16)     # Middle-earth night
-GOLD = (201, 162, 39)   # ring gold
+# Dark modules on a light parchment background = maximum scan reliability
+# while still staying on-brand. (Gold-on-dark looks nicer but scans poorly.)
+NIGHT = (20, 26, 18)       # near-black Middle-earth ink
+PARCHMENT = (244, 233, 208)  # warm parchment
 
 for pid in POINTS:
     url = f"{BASE}/ar.html?point={pid}"
-    qr = qrcode.QRCode(error_correction=ERROR_CORRECT_H, box_size=16, border=3)
+    qr = qrcode.QRCode(error_correction=ERROR_CORRECT_H, box_size=16, border=4)
     qr.add_data(url)
     qr.make(fit=True)
-    img = qr.make_image(fill_color=GOLD, back_color=DARK).convert("RGB")
+    img = qr.make_image(fill_color=NIGHT, back_color=PARCHMENT).convert("RGB")
     out = f"qr/{pid}.png"
     img.save(out)
     print(f"  {pid:8s} -> {url}\n            saved {out}  ({img.size[0]}x{img.size[1]})")
