@@ -19,6 +19,7 @@ const POINTS = [
   {
     id: "frodo",
     trigger: "qr",
+    page: "mindar.html",
     model: "models/frodo.glb",
     scale: "1 1 1",
     icon: "door",

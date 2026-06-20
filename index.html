@@ -294,7 +294,7 @@
       const tr = t(lang);
       pointsEl.innerHTML = POINTS.map((p) => {
         const info = tr.points[p.id];
-        const page = p.trigger === "gps" ? "gps.html" : "ar.html";
+        const page = p.page || (p.trigger === "gps" ? "gps.html" : "ar.html");
         const badge =
           p.trigger === "gps"
             ? `${icon("pin")}<span>${tr.gpsBadge}</span>`
