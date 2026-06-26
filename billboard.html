@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f1410" />
+  <title>Hobbiton AR · Billboard</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@300;400;500&family=Noto+Serif+SC:wght@600&family=Noto+Sans+SC:wght@300;400&display=swap" rel="stylesheet" />
+
+  <!-- A-Frame + MindAR (image tracking) -->
+  <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+  <style>
+    * { box-sizing:border-box; margin:0; padding:0; }
+    html, body { height:100%; overflow:hidden; }
+    body { font-family:"Inter","Noto Sans SC",sans-serif; color:#f4e9d0; background:#0f1410; }
+
+    .topbar {
+      position:fixed; top:0; left:0; right:0; z-index:30;
+      display:flex; align-items:center; gap:12px;
+      padding:max(16px,env(safe-area-inset-top)) 18px 14px;
+      background:linear-gradient(180deg, rgba(0,0,0,.55), transparent);
+    }
+    .back {
+      display:inline-flex; align-items:center; gap:8px; min-height:44px;
+      padding:8px 14px 8px 10px; color:#f4e9d0; text-decoration:none;
+      background:rgba(30,42,32,.6); border:1px solid #3a4a32;
+      border-radius:999px; font-size:.85rem; font-weight:500; backdrop-filter:blur(8px);
+    }
+    .back svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2; }
+    .title { font-family:"Cinzel",serif; font-size:1.05rem; font-weight:600; }
+    .lang-zh .title { font-family:"Noto Serif SC",serif; }
+
+    .scan {
+      position:fixed; left:50%; bottom:calc(40px + env(safe-area-inset-bottom));
+      transform:translateX(-50%); z-index:30; max-width:88vw;
+      display:flex; align-items:center; gap:10px;
+      padding:13px 20px; border-radius:999px;
+      background:rgba(20,28,22,.82); border:1px solid #3a4a32; backdrop-filter:blur(10px);
+      color:#f4e9d0; font-size:.88rem; text-align:center;
+    }
+    .scan svg { width:18px; height:18px; flex:0 0 auto; stroke:#d9bf63; fill:none; stroke-width:1.8; }
+    .scan.hidden { display:none; }
+
+    .err {
+      position:fixed; inset:0; z-index:40; display:none;
+      flex-direction:column; justify-content:center; align-items:center; text-align:center;
+      padding:30px; background:#0f1410;
+    }
+    .err.show { display:flex; }
+    .err h2 { font-family:"Cinzel",serif; margin-bottom:12px; color:#d9bf63; }
+    .err p { color:#cdbf9f; font-weight:300; line-height:1.6; max-width:420px; }
+
+    a-scene { z-index:1; }
+    .mindar-ui-overlay { z-index:20 !important; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="back" href="index.html">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+      <span id="backLabel">Map</span>
+    </a>
+    <span class="title" id="title">Bag End</span>
+  </div>
+
+  <div class="scan" id="scan">
+    <svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg>
+    <span id="scanTxt">Point your camera at the round door</span>
+  </div>
+
+  <div class="err" id="err">
+    <h2 id="errTitle">Target not ready</h2>
+    <p id="errMsg">The door image target hasn't been compiled yet.</p>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script>
+    /* ------------------------------------------------------------------
+       Sprite-sheet billboard component.
+       Draws one frame at a time from a sprite sheet onto a canvas and
+       maps it (with alpha) onto the entity's material — a flat "video"
+       plane that loops, identical on iOS and Android (no video codec).
+       Replace `src` later with your real green-screen/transparent clip
+       exported as a sprite sheet, or swap for a <video> texture.
+    ------------------------------------------------------------------ */
+    AFRAME.registerComponent("sprite-anim", {
+      schema: {
+        src:   { type: "string" },
+        cols:  { type: "int", default: 6 },
+        rows:  { type: "int", default: 4 },
+        frames:{ type: "int", default: 24 },
+        fps:   { type: "number", default: 14 },
+      },
+      init: function () {
+        const d = this.data;
+        this.fw = 0; this.fh = 0; this.ready = false;
+        this.frame = 0; this.acc = 0; this.spf = 1 / d.fps;
+
+        this.canvas = document.createElement("canvas");
+        this.ctx = this.canvas.getContext("2d");
+        this.tex = new THREE.CanvasTexture(this.canvas);
+        this.tex.minFilter = THREE.LinearFilter;
+        this.tex.magFilter = THREE.LinearFilter;
+
+        this.img = new Image();
+        this.img.crossOrigin = "anonymous";
+        this.img.onload = () => {
+          this.fw = this.img.width / d.cols;
+          this.fh = this.img.height / d.rows;
+          this.canvas.width = this.fw; this.canvas.height = this.fh;
+          this.ready = true;
+          this.applyTexture();
+          this.drawFrame();
+        };
+        this.img.src = d.src;
+      },
+      applyTexture: function () {
+        const mesh = this.el.getObject3D("mesh");
+        if (!mesh) { setTimeout(() => this.applyTexture(), 60); return; }
+        mesh.material.map = this.tex;
+        mesh.material.transparent = true;
+        mesh.material.alphaTest = 0.5;     // crisp cutout edges
+        mesh.material.needsUpdate = true;
+      },
+      drawFrame: function () {
+        const d = this.data;
+        const col = this.frame % d.cols;
+        const row = Math.floor(this.frame / d.cols);
+        this.ctx.clearRect(0, 0, this.fw, this.fh);
+        this.ctx.drawImage(
+          this.img, col*this.fw, row*this.fh, this.fw, this.fh,
+          0, 0, this.fw, this.fh
+        );
+        this.tex.needsUpdate = true;
+      },
+      tick: function (time, dt) {
+        if (!this.ready) return;
+        this.acc += (dt || 16) / 1000;
+        while (this.acc >= this.spf) {
+          this.acc -= this.spf;
+          this.frame = (this.frame + 1) % this.data.frames;
+          this.drawFrame();
+        }
+      },
+    });
+
+    const lang = Store.lang;
+    const tr = t(lang);
+    const point = getPoint("frodo");
+    const info = tr.points.frodo;
+    if (lang === "zh") document.body.classList.add("lang-zh");
+    document.documentElement.lang = lang;
+
+    document.getElementById("title").textContent = info.place;
+    document.getElementById("backLabel").textContent = tr.back;
+    document.getElementById("scanTxt").textContent =
+      lang === "es" ? "Apuntá la cámara a la puerta redonda"
+      : lang === "zh" ? "把相机对准那扇圆门"
+      : "Point your camera at the round door";
+
+    // Plane placement relative to the door image.
+    //   width/height keep the 220:320 sprite aspect ratio.
+    //   y negative drops the figure to the floor; z positive steps it
+    //   out in front of the door toward the visitor.
+    const PLANE = {
+      width: 0.55,
+      height: 0.80,
+      position: "0 -0.30 0.30",
+    };
+
+    async function init() {
+      let ok = false;
+      try {
+        const res = await fetch("assets/targets.mind", { method: "HEAD" });
+        ok = res.ok;
+      } catch (e) { ok = false; }
+
+      if (!ok) {
+        document.getElementById("err").classList.add("show");
+        document.getElementById("errTitle").textContent =
+          lang === "es" ? "Falta la imagen ancla"
+          : lang === "zh" ? "缺少锚定图像" : "Target not ready";
+        document.getElementById("errMsg").textContent =
+          lang === "es" ? "Todavía no compilamos la imagen de la puerta."
+          : lang === "zh" ? "门的图像目标尚未编译。" : "The door image target hasn't been compiled yet.";
+        return;
+      }
+
+      const scene = document.createElement("a-scene");
+      scene.setAttribute("mindar-image",
+        "imageTargetSrc: assets/targets.mind; filterMinCF: 0.00001; filterBeta: 0.0001; missTolerance: 5; warmupTolerance: 5");
+      scene.setAttribute("color-space", "sRGB");
+      scene.setAttribute("renderer", "colorManagement: true, physicallyCorrectLights, alpha: true");
+      scene.setAttribute("vr-mode-ui", "enabled: false");
+      scene.setAttribute("device-orientation-permission-ui", "enabled: false");
+
+      scene.innerHTML = `
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+        <a-entity id="anchor" mindar-image-target="targetIndex: 0">
+          <a-plane
+            id="char"
+            width="${PLANE.width}"
+            height="${PLANE.height}"
+            position="${PLANE.position}"
+            material="transparent: true; side: double; shader: flat"
+            sprite-anim="src: models/wave_sprite.png; cols: 6; rows: 4; frames: 24; fps: 14"></a-plane>
+        </a-entity>`;
+      document.body.appendChild(scene);
+
+      const anchor = scene.querySelector("#anchor");
+      anchor.addEventListener("targetFound", () => document.getElementById("scan").classList.add("hidden"));
+      anchor.addEventListener("targetLost", () => document.getElementById("scan").classList.remove("hidden"));
+    }
+
+    init();
+  </script>
+</body>
+</html>
