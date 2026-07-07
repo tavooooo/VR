@@ -75,15 +75,15 @@
       },
     });
   </script>
-  <a-scene vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
-    <!-- late-afternoon Shire sky -->
-    <a-sky color="#a8c4d8"></a-sky>
-    <a-plane rotation="-90 0 0" width="400" height="400" color="#5a7a45"></a-plane>
+  <a-scene vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false"
+           renderer="colorManagement: true">
+    <!-- twilight Shire sky so the firework embers glow like the party -->
+    <a-sky color="#1a2338"></a-sky>
+    <a-plane rotation="-90 0 0" width="400" height="400" color="#161d16"></a-plane>
 
-    <!-- soft bounce light so the paper stays cream seen from below -->
-    <a-entity light="type: hemisphere; color: #eef3f6; groundColor: #b9ac8e; intensity: 0.85"></a-entity>
-    <a-entity light="type: ambient; color: #cfc8b8; intensity: 0.35"></a-entity>
-    <a-entity light="type: directional; color: #fff2d8; intensity: 0.85" position="-6 12 4"></a-entity>
+    <!-- the dragon lights itself; keep the scene dim so the sparks pop -->
+    <a-entity light="type: ambient; color: #2a3350; intensity: 0.5"></a-entity>
+    <a-entity light="type: directional; color: #ffdca0; intensity: 0.35" position="-6 12 4"></a-entity>
 
     <!-- same component and numbers as the real GPS scene, just closer
          and lower so you can appreciate it from where you stand -->
