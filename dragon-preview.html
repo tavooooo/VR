@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f1410" />
+  <title>Hobbiton AR · Vista previa del dragón</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+
+  <style>
+    * { box-sizing:border-box; margin:0; padding:0; }
+    html, body { height:100%; overflow:hidden; }
+    body { font-family:"Inter",sans-serif; color:#f4e9d0; background:#0f1410; }
+
+    .topbar {
+      position:fixed; top:0; left:0; right:0; z-index:30;
+      display:flex; align-items:center; gap:12px;
+      padding:max(16px,env(safe-area-inset-top)) 18px 14px;
+      background:linear-gradient(180deg, rgba(0,0,0,.45), transparent);
+    }
+    .back {
+      display:inline-flex; align-items:center; gap:8px; min-height:44px;
+      padding:8px 14px 8px 10px; color:#f4e9d0; text-decoration:none;
+      background:rgba(30,42,32,.6); border:1px solid #3a4a32;
+      border-radius:999px; font-size:.85rem; font-weight:500; backdrop-filter:blur(8px);
+    }
+    .back svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2; }
+    .title { font-family:"Cinzel",serif; font-size:1.05rem; font-weight:600; }
+
+    .hint {
+      position:fixed; left:50%; bottom:calc(28px + env(safe-area-inset-bottom));
+      transform:translateX(-50%); z-index:30; max-width:88vw; text-align:center;
+      padding:12px 20px; border-radius:999px;
+      background:rgba(20,28,22,.82); border:1px solid #3a4a32; backdrop-filter:blur(10px);
+      color:#cdbf9f; font-size:.84rem; font-weight:300;
+    }
+    a-scene { position:fixed; inset:0; z-index:1; }
+    .a-enter-vr, .a-enter-ar { display:none !important; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="back" href="index.html">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+      Volver
+    </a>
+    <span class="title">El Dragón · Vista previa</span>
+  </div>
+
+  <div class="hint">La cámara sigue sola al dragón — así se verá sobre la posada</div>
+
+  <script src="js/paper-dragon.js"></script>
+  <script>
+    /* Preview-only: smoothly keep the camera aimed at the dragon. */
+    AFRAME.registerComponent("follow-dragon", {
+      init: function () {
+        this.target = new THREE.Vector3();
+        this.goal = new THREE.Quaternion();
+        this.m = new THREE.Matrix4();
+      },
+      tick: function () {
+        const dragonEl = document.querySelector("[paper-dragon]");
+        const comp = dragonEl && dragonEl.components["paper-dragon"];
+        if (!comp || !comp.model) return;
+        comp.model.getWorldPosition(this.target);
+        const o = this.el.object3D;
+        this.m.lookAt(o.position, this.target, o.up);
+        this.goal.setFromRotationMatrix(this.m);
+        o.quaternion.slerp(this.goal, 0.06);
+      },
+    });
+  </script>
+  <a-scene vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+    <!-- late-afternoon Shire sky -->
+    <a-sky color="#a8c4d8"></a-sky>
+    <a-plane rotation="-90 0 0" width="400" height="400" color="#5a7a45"></a-plane>
+
+    <!-- soft bounce light so the paper stays cream seen from below -->
+    <a-entity light="type: hemisphere; color: #eef3f6; groundColor: #b9ac8e; intensity: 0.85"></a-entity>
+    <a-entity light="type: ambient; color: #cfc8b8; intensity: 0.35"></a-entity>
+    <a-entity light="type: directional; color: #fff2d8; intensity: 0.85" position="-6 12 4"></a-entity>
+
+    <!-- same component and numbers as the real GPS scene, just closer
+         and lower so you can appreciate it from where you stand -->
+    <a-entity paper-dragon="size: 3; radius: 12; period: 22; altitude: 10"></a-entity>
+
+    <a-entity position="0 1.6 26" rotation="20 0 0" follow-dragon>
+      <a-camera look-controls="enabled: false" wasd-controls="enabled: false"></a-camera>
+    </a-entity>
+  </a-scene>
+</body>
+</html>
