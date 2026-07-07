@@ -42,10 +42,10 @@ const POINTS = [
     scale: "12 12 12",
     icon: "dragon",
     accent: "#a8442a",
-    // Party Tree at Hobbiton (approx). Replace lat/lng with the exact
-    // coordinates measured on-site next to the giant tree.
-    gps: { lat: -37.872090, lng: 175.682890, alt: 35 },
-    coords: "The Great Tree · Hobbiton",
+    // The Green Dragon Inn at Hobbiton (APPROXIMATE). Stand in front of
+    // the inn with capture.html and paste the exact reading here.
+    gps: { lat: -37.872900, lng: 175.683800, alt: 25 },
+    coords: "The Green Dragon Inn · Hobbiton",
   },
 ];
 
@@ -66,14 +66,14 @@ const I18N = {
     gpsBadge: "Find by location",
     instructionsTitle: "How it works",
     instrQr: "Point your camera at the open space, then tap to place the character and walk around them.",
-    instrGps: "Allow location & motion access, then raise your phone toward the great tree to see the dragon circling above.",
+    instrGps: "Allow location & motion access, then raise your phone above The Green Dragon Inn to see the paper dragon circling overhead.",
     arCta: "See in your real world",
     realBgHint: "Opens your camera — the character appears in the real scene",
     camExit: "Close camera",
     camDenied: "Camera blocked. Allow camera access in your browser settings.",
     storyLabel: "Story",
     allow: "Allow camera & sensors",
-    locating: "Locating the dragon… aim your phone at the tree",
+    locating: "Locating the dragon… aim your phone above the inn",
     loading: "Summoning…",
     notSupported: "Your browser does not support AR. Try Safari (iOS) or Chrome (Android).",
     points: {
@@ -89,8 +89,8 @@ const I18N = {
       },
       dragon: {
         name: "The Dragon",
-        place: "The Great Tree",
-        story: "Look to the skies above the great tree. A dragon of old wheels through the clouds — a legend awakened over the rooftops of Hobbiton.",
+        place: "The Green Dragon Inn",
+        story: "Look to the skies above The Green Dragon Inn. A dragon of paper and legend wheels overhead — the old tales come alive over the rooftops of Hobbiton.",
       },
     },
   },
@@ -107,14 +107,14 @@ const I18N = {
     gpsBadge: "按位置寻找",
     instructionsTitle: "使用方法",
     instrQr: "将摄像头对准开阔处，轻触放置角色，并绕着他走动。",
-    instrGps: "请允许位置和动作权限，然后将手机举向那棵大树，即可看到巨龙在空中盘旋。",
+    instrGps: "请允许位置和动作权限，然后将手机举向绿龙酒馆上空，即可看到纸巨龙在空中盘旋。",
     arCta: "在真实环境中查看",
     realBgHint: "开启相机——角色将出现在真实场景中",
     camExit: "关闭相机",
     camDenied: "相机被阻止。请在浏览器设置中允许使用相机。",
     storyLabel: "故事",
     allow: "允许摄像头与传感器",
-    locating: "正在定位巨龙……请将手机对准大树",
+    locating: "正在定位巨龙……请将手机对准酒馆上空",
     loading: "召唤中……",
     notSupported: "您的浏览器不支持 AR。请尝试 Safari（iOS）或 Chrome（安卓）。",
     points: {
@@ -130,8 +130,8 @@ const I18N = {
       },
       dragon: {
         name: "巨龙",
-        place: "参天大树",
-        story: "仰望大树上方的天空。一条远古巨龙在云间盘旋——一个在霍比屯屋顶上空苏醒的传说。",
+        place: "绿龙酒馆",
+        story: "仰望绿龙酒馆上空。一条纸与传说折成的巨龙在空中盘旋——古老的故事在霍比屯的屋顶上苏醒。",
       },
     },
   },
@@ -148,14 +148,14 @@ const I18N = {
     gpsBadge: "Buscar por ubicación",
     instructionsTitle: "Cómo funciona",
     instrQr: "Apunta la cámara al espacio abierto, toca para colocar al personaje y camina a su alrededor.",
-    instrGps: "Permite el acceso a ubicación y movimiento, luego levanta el teléfono hacia el gran árbol para ver al dragón volando arriba.",
+    instrGps: "Permite el acceso a ubicación y movimiento, luego levanta el teléfono sobre la posada El Dragón Verde para ver al dragón de papel volando en círculos.",
     arCta: "Ver en tu entorno real",
     realBgHint: "Abre tu cámara — el personaje aparece en la escena real",
     camExit: "Cerrar cámara",
     camDenied: "Cámara bloqueada. Permití el acceso a la cámara en los ajustes del navegador.",
     storyLabel: "Historia",
     allow: "Permitir cámara y sensores",
-    locating: "Localizando al dragón… apunta el teléfono al árbol",
+    locating: "Localizando al dragón… apunta el teléfono sobre la posada",
     loading: "Invocando…",
     notSupported: "Tu navegador no soporta AR. Prueba Safari (iOS) o Chrome (Android).",
     points: {
@@ -171,8 +171,8 @@ const I18N = {
       },
       dragon: {
         name: "El Dragón",
-        place: "El Gran Árbol",
-        story: "Mira al cielo sobre el gran árbol. Un dragón de antaño surca las nubes — una leyenda despierta sobre los tejados de Hobbiton.",
+        place: "El Dragón Verde",
+        story: "Mira al cielo sobre la posada El Dragón Verde. Un dragón de papel y leyenda gira en lo alto — los viejos cuentos cobran vida sobre los tejados de Hobbiton.",
       },
     },
   },

@@ -147,6 +147,7 @@
   <div class="scene-wrap" id="sceneWrap"></div>
 
   <script src="js/config.js"></script>
+  <script src="js/paper-dragon.js"></script>
   <script>
     const lang = Store.lang;
     const tr = t(lang);
@@ -190,17 +191,11 @@
 
           <a-camera gps-camera="gpsMinDistance: 5" rotation-reader></a-camera>
 
-          <!-- ground-anchored at the tree's GPS position -->
+          <!-- ground-anchored at The Green Dragon Inn's GPS position -->
           <a-entity gps-entity-place="latitude: ${lat}; longitude: ${lng}">
-            <!-- model lifted into the sky and slowly circling -->
-            <a-entity
-              gltf-model="${point.model}"
-              scale="${point.scale}"
-              position="0 ${alt} 0"
-              rotation="0 0 0"
-              animation="property: rotation; to: 0 360 0; loop: true; dur: 24000; easing: linear"
-              animation__bob="property: position; dir: alternate; to: 0 ${alt + 4} 0; loop: true; dur: 4000; easing: easeInOutSine">
-            </a-entity>
+            <!-- procedural paper dragon: flaps, glides and banks while
+                 circling the inn (all flight logic in js/paper-dragon.js) -->
+            <a-entity paper-dragon="size: 3; radius: 12; period: 22; altitude: ${alt}"></a-entity>
           </a-entity>
         </a-scene>`;
 
