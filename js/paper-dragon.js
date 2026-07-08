@@ -47,7 +47,7 @@ AFRAME.registerComponent("paper-dragon", {
 
     // ---- shared shader for the body particles (twinkling embers) -----
     this.bodyMat = new THREE.ShaderMaterial({
-      uniforms: { uTime: { value: 0 }, uSize: { value: 98 }, uBoost: { value: 1.9 },
+      uniforms: { uTime: { value: 0 }, uSize: { value: 118 }, uBoost: { value: 2.6 },
                   uTex: { value: glow } },
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
       vertexShader: `
@@ -56,10 +56,10 @@ AFRAME.registerComponent("paper-dragon", {
         varying vec3 vColor; varying float vTw;
         void main() {
           vColor = aColor;
-          float tw = 0.80 + 0.20 * sin(uTime * 6.0 + aPhase);
+          float tw = 0.84 + 0.16 * sin(uTime * 6.0 + aPhase);
           vTw = tw;
           vec4 mv = modelViewMatrix * vec4(position, 1.0);
-          gl_PointSize = min(70.0, aSize * uSize * tw / -mv.z);
+          gl_PointSize = min(84.0, aSize * uSize * tw / -mv.z);
           gl_Position = projectionMatrix * mv;
         }`,
       fragmentShader: `
@@ -68,6 +68,29 @@ AFRAME.registerComponent("paper-dragon", {
         void main() {
           vec4 t = texture2D(uTex, gl_PointCoord);
           gl_FragColor = vec4(vColor * vTw * uBoost, t.a);
+        }`,
+    });
+
+    // ---- soft halo material: big dim sprites behind the body for bloom
+    this.haloMat = new THREE.ShaderMaterial({
+      uniforms: { uSize: { value: 300 }, uBoost: { value: 0.5 }, uTex: { value: glow } },
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      vertexShader: `
+        attribute vec3 aColor; attribute float aSize;
+        uniform float uSize;
+        varying vec3 vColor;
+        void main() {
+          vColor = aColor;
+          vec4 mv = modelViewMatrix * vec4(position, 1.0);
+          gl_PointSize = min(240.0, aSize * uSize / -mv.z);
+          gl_Position = projectionMatrix * mv;
+        }`,
+      fragmentShader: `
+        uniform sampler2D uTex; uniform float uBoost;
+        varying vec3 vColor;
+        void main() {
+          vec4 t = texture2D(uTex, gl_PointCoord);
+          gl_FragColor = vec4(vColor * uBoost, t.a * 0.6);
         }`,
     });
 
@@ -101,6 +124,21 @@ AFRAME.registerComponent("paper-dragon", {
       geo.setAttribute("aPhase",   new THREE.BufferAttribute(ph, 1));
       geo.setAttribute("aSize",    new THREE.BufferAttribute(sz, 1));
       return new THREE.Points(geo, this.bodyMat);
+    };
+    // Big soft glow blobs behind a mass of points → bloom/blaze.
+    const makeHalo = (pts, tint, sizeMin, sizeMax) => {
+      const n = pts.length;
+      const pos = new Float32Array(n * 3), col = new Float32Array(n * 3), sz = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        pos[i*3] = pts[i][0]; pos[i*3+1] = pts[i][1]; pos[i*3+2] = pts[i][2];
+        col[i*3] = tint[0]; col[i*3+1] = tint[1]; col[i*3+2] = tint[2];
+        sz[i] = rand(sizeMin, sizeMax) * S;
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+      geo.setAttribute("aColor",   new THREE.BufferAttribute(col, 3));
+      geo.setAttribute("aSize",    new THREE.BufferAttribute(sz, 1));
+      return new THREE.Points(geo, this.haloMat);
     };
     // fill a tapered tube along z
     const tube = (n, z0, z1, r0, r1, yFlat) => {
@@ -208,33 +246,42 @@ AFRAME.registerComponent("paper-dragon", {
     const AMBER = [1.0, 0.70, 0.34];  // wing membrane / tail
 
     // ---- body + chest (attached to inner) ----------------------------
-    // dim volumetric fill…
-    this.inner.add(makePoints(tube(820, -0.75, 0.55, 0.20, 0.11, 0.8),
-      GOLD, 0.032, 0.06));
-    this.inner.add(makePoints(cluster(200, [0, 0.02, -0.72], 0.2, 0.85),
-      [1.0, 0.9, 0.6], 0.035, 0.07));
+    // soft bloom halo along the body core…
+    this.inner.add(makeHalo(tube(90, -0.72, 0.5, 0.14, 0.08, 0.8),
+      [1.0, 0.75, 0.35], 0.14, 0.26));
+    // …dense volumetric fill…
+    this.inner.add(makePoints(tube(1150, -0.75, 0.55, 0.20, 0.11, 0.8),
+      GOLD, 0.032, 0.062));
+    this.inner.add(makePoints(cluster(300, [0, 0.02, -0.72], 0.2, 0.85),
+      [1.0, 0.9, 0.6], 0.035, 0.072));
     // …bright dorsal spine line + ridge of spikes on top
     this.inner.add(makePoints(strand(220,
       [[0,0.17,-0.78],[0,0.15,-0.4],[0,0.14,0.0],[0,0.12,0.4],[0,0.10,0.55]], 0.02),
       EDGE, 0.05, 0.085));
-    this.inner.add(makePoints(spikes(-0.55, 0.5, 8, 0.13, 0.12, 0.06),
-      EDGE, 0.04, 0.075));
+    this.inner.add(makePoints(spikes(-0.55, 0.5, 13, 0.13, 0.13, 0.06),
+      EDGE, 0.04, 0.078));
     // belly line (faint, defines the underside)
     this.inner.add(makePoints(strand(120,
       [[0,-0.16,-0.7],[0,-0.12,-0.2],[0,-0.11,0.3],[0,-0.09,0.55]], 0.02),
       GOLD, 0.03, 0.055));
 
-    // ---- folded hind legs with claws (attached to inner) -------------
+    // ---- folded hind + front legs with claws (attached to inner) -----
     for (const sx of [-1, 1]) {
-      // upper leg → foot
-      this.inner.add(makePoints(strand(80,
+      // hind leg → foot
+      this.inner.add(makePoints(strand(90,
         [[sx*0.13,-0.1,0.2],[sx*0.24,-0.26,0.14],[sx*0.2,-0.4,0.3]], 0.02),
-        [1.0, 0.72, 0.34], 0.04, 0.075));
-      // three claws
+        [1.0, 0.72, 0.34], 0.04, 0.078));
       for (const cz of [0.22, 0.32, 0.42]) {
+        this.inner.add(makePoints(strand(20,
+          [[sx*0.2,-0.4,0.3],[sx*0.18,-0.46,cz]], 0.012), EDGE, 0.03, 0.062));
+      }
+      // front leg (tucked under the chest) → foot
+      this.inner.add(makePoints(strand(80,
+        [[sx*0.14,-0.08,-0.5],[sx*0.22,-0.24,-0.42],[sx*0.19,-0.36,-0.28]], 0.02),
+        [1.0, 0.72, 0.34], 0.04, 0.075));
+      for (const cz of [-0.36, -0.28, -0.2]) {
         this.inner.add(makePoints(strand(18,
-          [[sx*0.2,-0.4,0.3],[sx*0.18,-0.46,cz]], 0.012),
-          EDGE, 0.03, 0.06));
+          [[sx*0.19,-0.36,-0.28],[sx*0.17,-0.42,cz]], 0.012), EDGE, 0.03, 0.06));
       }
     }
 
@@ -262,9 +309,11 @@ AFRAME.registerComponent("paper-dragon", {
     this.headGroup.position.set(0, 0.36, -0.41);
     neckGroup.add(this.headGroup);
     const H = this.headGroup;
-    // dim skull volume
-    H.add(makePoints(cluster(170, [0, 0.02, -0.04], 0.12, 0.9),
-      [1.0, 0.86, 0.55], 0.03, 0.06));
+    // soft head glow + dim skull volume
+    H.add(makeHalo(cluster(24, [0, 0.02, -0.08], 0.12, 0.9),
+      [1.0, 0.7, 0.34], 0.12, 0.22));
+    H.add(makePoints(cluster(230, [0, 0.02, -0.04], 0.12, 0.9),
+      [1.0, 0.86, 0.55], 0.03, 0.062));
     // upper jaw / snout — two bright edges give it a defined muzzle
     for (const sx of [-1, 1]) {
       H.add(makePoints(strand(90,
@@ -336,10 +385,14 @@ AFRAME.registerComponent("paper-dragon", {
     const buildWing = (mirror) => {
       const wing = new THREE.Group();
       wing.position.set(0.18, 0.08, -0.25);
+      // soft bloom halo across the inner membrane
+      wing.add(makeHalo(
+        quad(60, [0, -0.30], [1.0, -0.35], [1.0, 0.12], [0, 0.30]),
+        [1.0, 0.6, 0.28], 0.12, 0.24));
       // membrane fill
       wing.add(makePoints(
-        quad(620, [0, -0.30], [1.0, -0.35], [1.0, 0.12], [0, 0.30]),
-        AMBER, 0.04, 0.075));
+        quad(860, [0, -0.30], [1.0, -0.35], [1.0, 0.12], [0, 0.30]),
+        AMBER, 0.04, 0.078));
       // bright arm bone (leading edge) + trailing edge + two finger struts
       wing.add(makePoints(strand(150,
         [[0,0,-0.30],[0.5,0,-0.33],[1.0,0,-0.34]], 0.014), EDGE, 0.045, 0.085));
@@ -352,18 +405,30 @@ AFRAME.registerComponent("paper-dragon", {
 
       const outer = new THREE.Group();
       outer.position.set(1.0, 0, -0.02);
+      // soft bloom halo over the outer membrane
+      outer.add(makeHalo(
+        fan(55, [[0, -0.32], [1.15, -0.18], [0.8, 0.15], [0.45, 0.30], [0, 0.34]]),
+        [1.0, 0.55, 0.24], 0.12, 0.24));
       // membrane fill
       outer.add(makePoints(
-        fan(500, [[0, -0.32], [1.15, -0.18], [0.8, 0.15], [0.45, 0.30], [0, 0.34]]),
-        AMBER, 0.038, 0.07));
+        fan(700, [[0, -0.32], [1.15, -0.18], [0.8, 0.15], [0.45, 0.30], [0, 0.34]]),
+        AMBER, 0.038, 0.072));
       // finger bones fanning from the wrist to each scallop tip
       const wrist = [0,0,-0.30];
-      for (const tip2 of [[1.15,0,-0.18],[0.8,0,0.15],[0.45,0,0.30]])
-        outer.add(makePoints(strand(70, [wrist, tip2], 0.012), EDGE, 0.035, 0.075));
+      const tips = [[1.15,0,-0.18],[0.8,0,0.15],[0.45,0,0.30]];
+      for (const tip2 of tips)
+        outer.add(makePoints(strand(80, [wrist, tip2], 0.012), EDGE, 0.035, 0.078));
+      // membrane veins between consecutive fingers (extra detail)
+      for (let f = 0; f < tips.length - 1; f++) {
+        const mid = [(tips[f][0]+tips[f+1][0])/2, 0, (tips[f][2]+tips[f+1][2])/2];
+        outer.add(makePoints(strand(30, [
+          [wrist[0]*0.4+mid[0]*0.6, 0, wrist[2]*0.4+mid[2]*0.6], mid], 0.01),
+          [1.0, 0.66, 0.3], 0.028, 0.055));
+      }
       // scalloped trailing outline linking the tips
-      outer.add(makePoints(strand(120,
+      outer.add(makePoints(strand(140,
         [[1.15,0,-0.18],[0.8,0,0.15],[0.45,0,0.30],[0,0,0.34]], 0.012),
-        [1.0, 0.7, 0.32], 0.03, 0.06));
+        [1.0, 0.7, 0.32], 0.03, 0.062));
 
       wing.add(outer);
       const tip = new THREE.Group();
@@ -395,7 +460,7 @@ AFRAME.registerComponent("paper-dragon", {
 
   // -------------------------------------------------------------------
   buildSparks: function (glow) {
-    const N = this.sparkN = 900;
+    const N = this.sparkN = 1300;
     this.spPos  = new Float32Array(N * 3);
     this.spVel  = new Float32Array(N * 3);
     this.spLife = new Float32Array(N);      // 0 = dead
@@ -491,7 +556,7 @@ AFRAME.registerComponent("paper-dragon", {
 
     // ---- emit + integrate trailing embers ----------------------------
     this.el.object3D.updateMatrixWorld(true);
-    const perEmitter = 2;
+    const perEmitter = 3;
     for (const em of this.emitters) {
       em.getWorldPosition(this._wp);
       this.el.object3D.worldToLocal(this._wp);
