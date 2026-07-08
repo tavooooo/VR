@@ -47,7 +47,8 @@ AFRAME.registerComponent("paper-dragon", {
 
     // ---- shared shader for the body particles (twinkling embers) -----
     this.bodyMat = new THREE.ShaderMaterial({
-      uniforms: { uTime: { value: 0 }, uSize: { value: 62 }, uTex: { value: glow } },
+      uniforms: { uTime: { value: 0 }, uSize: { value: 98 }, uBoost: { value: 1.9 },
+                  uTex: { value: glow } },
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
       vertexShader: `
         attribute vec3 aColor; attribute float aPhase; attribute float aSize;
@@ -55,18 +56,18 @@ AFRAME.registerComponent("paper-dragon", {
         varying vec3 vColor; varying float vTw;
         void main() {
           vColor = aColor;
-          float tw = 0.62 + 0.38 * sin(uTime * 6.0 + aPhase);
+          float tw = 0.80 + 0.20 * sin(uTime * 6.0 + aPhase);
           vTw = tw;
           vec4 mv = modelViewMatrix * vec4(position, 1.0);
-          gl_PointSize = min(44.0, aSize * uSize * tw / -mv.z);
+          gl_PointSize = min(70.0, aSize * uSize * tw / -mv.z);
           gl_Position = projectionMatrix * mv;
         }`,
       fragmentShader: `
-        uniform sampler2D uTex;
+        uniform sampler2D uTex; uniform float uBoost;
         varying vec3 vColor; varying float vTw;
         void main() {
           vec4 t = texture2D(uTex, gl_PointCoord);
-          gl_FragColor = vec4(vColor * vTw, t.a);
+          gl_FragColor = vec4(vColor * vTw * uBoost, t.a);
         }`,
     });
 
@@ -202,9 +203,9 @@ AFRAME.registerComponent("paper-dragon", {
     };
 
     // tints -------------------------------------------------------------
-    const EDGE = [1.0, 0.95, 0.72];   // hot white-gold — skeleton lines
-    const GOLD = [1.0, 0.82, 0.45];   // body
-    const AMBER = [1.0, 0.62, 0.26];  // wing membrane / tail
+    const EDGE = [1.0, 0.96, 0.76];   // hot white-gold — skeleton lines
+    const GOLD = [1.0, 0.84, 0.48];   // body
+    const AMBER = [1.0, 0.70, 0.34];  // wing membrane / tail
 
     // ---- body + chest (attached to inner) ----------------------------
     // dim volumetric fill…
@@ -335,10 +336,10 @@ AFRAME.registerComponent("paper-dragon", {
     const buildWing = (mirror) => {
       const wing = new THREE.Group();
       wing.position.set(0.18, 0.08, -0.25);
-      // dim membrane fill
+      // membrane fill
       wing.add(makePoints(
-        quad(520, [0, -0.30], [1.0, -0.35], [1.0, 0.12], [0, 0.30]),
-        AMBER, 0.028, 0.055));
+        quad(620, [0, -0.30], [1.0, -0.35], [1.0, 0.12], [0, 0.30]),
+        AMBER, 0.04, 0.075));
       // bright arm bone (leading edge) + trailing edge + two finger struts
       wing.add(makePoints(strand(150,
         [[0,0,-0.30],[0.5,0,-0.33],[1.0,0,-0.34]], 0.014), EDGE, 0.045, 0.085));
@@ -351,10 +352,10 @@ AFRAME.registerComponent("paper-dragon", {
 
       const outer = new THREE.Group();
       outer.position.set(1.0, 0, -0.02);
-      // dim membrane fill
+      // membrane fill
       outer.add(makePoints(
-        fan(420, [[0, -0.32], [1.15, -0.18], [0.8, 0.15], [0.45, 0.30], [0, 0.34]]),
-        AMBER, 0.026, 0.05));
+        fan(500, [[0, -0.32], [1.15, -0.18], [0.8, 0.15], [0.45, 0.30], [0, 0.34]]),
+        AMBER, 0.038, 0.07));
       // finger bones fanning from the wrist to each scallop tip
       const wrist = [0,0,-0.30];
       for (const tip2 of [[1.15,0,-0.18],[0.8,0,0.15],[0.45,0,0.30]])
@@ -407,7 +408,7 @@ AFRAME.registerComponent("paper-dragon", {
     geo.setAttribute("aLife",    new THREE.BufferAttribute(this.spLife, 1));
     geo.setAttribute("aSeed",    new THREE.BufferAttribute(this.spSeed, 1));
     const mat = new THREE.ShaderMaterial({
-      uniforms: { uSize: { value: 26 * this.data.size }, uTex: { value: glow } },
+      uniforms: { uSize: { value: 40 * this.data.size }, uTex: { value: glow } },
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
       vertexShader: `
         attribute float aLife; attribute float aSeed;
@@ -416,8 +417,8 @@ AFRAME.registerComponent("paper-dragon", {
         void main() {
           vLife = aLife;
           vec4 mv = modelViewMatrix * vec4(position, 1.0);
-          float sz = uSize * smoothstep(0.0, 0.25, aLife) * (0.35 + 0.65 * aLife);
-          gl_PointSize = min(30.0, max(0.0, sz) / -mv.z);
+          float sz = uSize * smoothstep(0.0, 0.25, aLife) * (0.4 + 0.6 * aLife);
+          gl_PointSize = min(46.0, max(0.0, sz) / -mv.z);
           gl_Position = projectionMatrix * mv;
         }`,
       fragmentShader: `
