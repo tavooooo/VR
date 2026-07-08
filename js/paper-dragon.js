@@ -160,12 +160,82 @@ AFRAME.registerComponent("paper-dragon", {
       }
       return out;
     };
+    // bright glowing line: sample n points along a 3-D polyline with jitter.
+    // These "strands" trace the skeleton — spine, wing bones, jaw, horns —
+    // so the silhouette reads sharply instead of as a soft blob.
+    const strand = (n, path, jit) => {
+      const lens = []; let total = 0;
+      for (let i = 0; i < path.length - 1; i++) {
+        const L = Math.hypot(
+          path[i+1][0]-path[i][0], path[i+1][1]-path[i][1], path[i+1][2]-path[i][2]);
+        lens.push(L); total += L;
+      }
+      const out = [];
+      for (let k = 0; k < n; k++) {
+        let r = Math.random() * total, i = 0;
+        while (i < lens.length - 1 && r > lens[i]) { r -= lens[i]; i++; }
+        const t = lens[i] ? r / lens[i] : 0, a = path[i], b = path[i+1];
+        out.push([
+          a[0]+(b[0]-a[0])*t + rand(-jit, jit),
+          a[1]+(b[1]-a[1])*t + rand(-jit, jit),
+          a[2]+(b[2]-a[2])*t + rand(-jit, jit),
+        ]);
+      }
+      return out;
+    };
+    // a row of little triangular spikes (dorsal ridge) along z at height y.
+    const spikes = (z0, z1, count, baseY, h, lean) => {
+      const out = [];
+      for (let s = 0; s < count; s++) {
+        const z = z0 + (z1 - z0) * (s / Math.max(1, count - 1));
+        const hh = h * (0.65 + 0.5 * Math.random());
+        for (let i = 0; i < 16; i++) {
+          const t = Math.random();
+          out.push([
+            rand(-0.015, 0.015),
+            baseY + hh * t,
+            z + (lean || 0.05) * t + rand(-0.01, 0.01),
+          ]);
+        }
+      }
+      return out;
+    };
+
+    // tints -------------------------------------------------------------
+    const EDGE = [1.0, 0.95, 0.72];   // hot white-gold — skeleton lines
+    const GOLD = [1.0, 0.82, 0.45];   // body
+    const AMBER = [1.0, 0.62, 0.26];  // wing membrane / tail
 
     // ---- body + chest (attached to inner) ----------------------------
-    this.inner.add(makePoints(tube(950, -0.75, 0.55, 0.22, 0.12, 0.8),
-      [1.0, 0.85, 0.5], 0.045, 0.085));
-    this.inner.add(makePoints(cluster(260, [0, 0.02, -0.72], 0.22, 0.85),
-      [1.0, 0.92, 0.62], 0.05, 0.10));
+    // dim volumetric fill…
+    this.inner.add(makePoints(tube(820, -0.75, 0.55, 0.20, 0.11, 0.8),
+      GOLD, 0.032, 0.06));
+    this.inner.add(makePoints(cluster(200, [0, 0.02, -0.72], 0.2, 0.85),
+      [1.0, 0.9, 0.6], 0.035, 0.07));
+    // …bright dorsal spine line + ridge of spikes on top
+    this.inner.add(makePoints(strand(220,
+      [[0,0.17,-0.78],[0,0.15,-0.4],[0,0.14,0.0],[0,0.12,0.4],[0,0.10,0.55]], 0.02),
+      EDGE, 0.05, 0.085));
+    this.inner.add(makePoints(spikes(-0.55, 0.5, 8, 0.13, 0.12, 0.06),
+      EDGE, 0.04, 0.075));
+    // belly line (faint, defines the underside)
+    this.inner.add(makePoints(strand(120,
+      [[0,-0.16,-0.7],[0,-0.12,-0.2],[0,-0.11,0.3],[0,-0.09,0.55]], 0.02),
+      GOLD, 0.03, 0.055));
+
+    // ---- folded hind legs with claws (attached to inner) -------------
+    for (const sx of [-1, 1]) {
+      // upper leg → foot
+      this.inner.add(makePoints(strand(80,
+        [[sx*0.13,-0.1,0.2],[sx*0.24,-0.26,0.14],[sx*0.2,-0.4,0.3]], 0.02),
+        [1.0, 0.72, 0.34], 0.04, 0.075));
+      // three claws
+      for (const cz of [0.22, 0.32, 0.42]) {
+        this.inner.add(makePoints(strand(18,
+          [[sx*0.2,-0.4,0.3],[sx*0.18,-0.46,cz]], 0.012),
+          EDGE, 0.03, 0.06));
+      }
+    }
 
     // ---- neck (attached to a swaying group) --------------------------
     const neckGroup = new THREE.Group();
@@ -179,23 +249,57 @@ AFRAME.registerComponent("paper-dragon", {
       const a = Math.random() * Math.PI * 2, rr = r * Math.sqrt(Math.random());
       neckPts.push([cx + rr*Math.cos(a), cy + rr*Math.sin(a), cz]);
     }
-    neckGroup.add(makePoints(neckPts, [1.0, 0.88, 0.55], 0.05, 0.10));
+    neckGroup.add(makePoints(neckPts, GOLD, 0.032, 0.06));
+    // bright crest line running up the neck + small neck spikes
+    neckGroup.add(makePoints(strand(120,
+      [[0,0.02,0.02],[0,0.2,-0.2],[0,0.36,-0.4]], 0.018), EDGE, 0.045, 0.08));
+    neckGroup.add(makePoints(spikes(-0.02, 0.0, 4, 0.12, 0.09, -0.02),
+      EDGE, 0.035, 0.065));
 
     // ---- head + snout + horns (attached to head group) ---------------
     this.headGroup = new THREE.Group();
     this.headGroup.position.set(0, 0.36, -0.41);
     neckGroup.add(this.headGroup);
-    this.headGroup.add(makePoints(cluster(280, [0, 0, 0], 0.15, 0.9),
-      [1.0, 0.95, 0.68], 0.05, 0.10));
-    this.headGroup.add(makePoints(tube(120, -0.05, -0.32, 0.06, 0.02, 1),
-      [1.0, 0.9, 0.55], 0.04, 0.08));                    // snout forward
+    const H = this.headGroup;
+    // dim skull volume
+    H.add(makePoints(cluster(170, [0, 0.02, -0.04], 0.12, 0.9),
+      [1.0, 0.86, 0.55], 0.03, 0.06));
+    // upper jaw / snout — two bright edges give it a defined muzzle
     for (const sx of [-1, 1]) {
-      const horn = [];
-      for (let i = 0; i < 40; i++) {
-        const t = Math.random();
-        horn.push([sx*0.07 + rand(-0.01,0.01), 0.08 + 0.16*t, 0.05 + 0.02*t]);
-      }
-      this.headGroup.add(makePoints(horn, [1.0, 0.8, 0.4], 0.03, 0.07));
+      H.add(makePoints(strand(90,
+        [[sx*0.05,0.05,0.08],[sx*0.045,0.0,-0.14],[sx*0.03,-0.02,-0.34]], 0.014),
+        EDGE, 0.04, 0.075));
+    }
+    // lower jaw, dropped open
+    for (const sx of [-1, 1]) {
+      H.add(makePoints(strand(70,
+        [[sx*0.05,-0.04,0.06],[sx*0.045,-0.09,-0.12],[sx*0.03,-0.13,-0.28]], 0.014),
+        [1.0, 0.78, 0.4], 0.035, 0.07));
+    }
+    // hot breath glowing in the open mouth
+    H.add(makePoints(cluster(50, [0, -0.05, -0.12], 0.06, 1),
+      [1.0, 0.45, 0.15], 0.04, 0.08));
+    // teeth — tiny bright specks along the jaw line
+    for (const sx of [-1, 1]) for (const tz of [-0.06,-0.14,-0.22,-0.3]) {
+      H.add(makePoints(strand(8, [[sx*0.04,-0.01,tz],[sx*0.04,-0.05,tz]], 0.008),
+        [1,1,0.9], 0.025, 0.045));
+    }
+    // brow ridge over the eyes
+    H.add(makePoints(strand(60,
+      [[-0.09,0.12,-0.02],[0,0.14,-0.05],[0.09,0.12,-0.02]], 0.015),
+      EDGE, 0.04, 0.07));
+    // eyes — sharp bright cores
+    for (const sx of [-1, 1])
+      H.add(makePoints(cluster(24, [sx*0.075,0.06,-0.11], 0.028, 1),
+        [1.0, 1.0, 0.85], 0.045, 0.08));
+    // swept-back horns
+    for (const sx of [-1, 1]) {
+      H.add(makePoints(strand(60,
+        [[sx*0.07,0.13,0.05],[sx*0.11,0.24,0.18],[sx*0.14,0.3,0.34]], 0.014),
+        EDGE, 0.035, 0.07));
+      // small cheek frill spike
+      H.add(makePoints(strand(24, [[sx*0.1,0.0,0.06],[sx*0.16,0.06,0.14]], 0.012),
+        [1.0, 0.7, 0.32], 0.03, 0.06));
     }
 
     // ---- tail: 4 chained segments + spade tip (travelling wave) ------
@@ -206,35 +310,63 @@ AFRAME.registerComponent("paper-dragon", {
     for (let i = 0; i < lens.length; i++) {
       const seg = new THREE.Group();
       seg.position.z = zOff;
-      const tint = [1.0, 0.65 - i*0.06, 0.25 - i*0.03];  // cools toward tip
-      seg.add(makePoints(tube(170, 0, lens[i], i ? rads[i-1] : 0.13, rads[i], 1),
-        tint, 0.04, 0.08));
+      const tint = [1.0, 0.62 - i*0.05, 0.24 - i*0.03];  // cools toward tip
+      const r0 = i ? rads[i-1] : 0.13;
+      seg.add(makePoints(tube(120, 0, lens[i], r0, rads[i], 1), tint, 0.03, 0.06));
+      // bright spine line + little spikes riding each tail segment
+      seg.add(makePoints(strand(70,
+        [[0, r0*0.9, 0],[0, rads[i]*0.9, lens[i]]], 0.015), EDGE, 0.04, 0.07));
+      seg.add(makePoints(spikes(0.02, lens[i]-0.02, 3, r0*0.8, 0.09-0.015*i, 0.04),
+        EDGE, 0.03, 0.06));
       parent.add(seg);
       this.tailSegs.push(seg);
       parent = seg;
       zOff = lens[i];
     }
     this.spade = parent;
+    // arrow-head tail fin: bright outline + dim fill
+    const spadeOutline = [[0,0,0],[0.14,0,0.16],[0.05,0,0.36],[-0.05,0,0.36],[-0.14,0,0.16],[0,0,0]];
     parent.add(makePoints(
-      quad(170, [-0.13, 0], [0.13, 0], [0.05, 0.34], [-0.05, 0.34]),
-      [1.0, 0.5, 0.18], 0.045, 0.09));
+      quad(90, [-0.13, 0], [0.13, 0], [0.05, 0.34], [-0.05, 0.34]),
+      AMBER, 0.03, 0.06));
+    parent.add(makePoints(strand(110, spadeOutline, 0.012), EDGE, 0.04, 0.075));
 
     // ---- wings (inner membrane + scalloped outer) --------------------
     const buildWing = (mirror) => {
       const wing = new THREE.Group();
       wing.position.set(0.18, 0.08, -0.25);
+      // dim membrane fill
       wing.add(makePoints(
-        quad(760, [0, -0.30], [1.0, -0.35], [1.0, 0.12], [0, 0.30]),
-        [1.0, 0.8, 0.42], 0.04, 0.08));
+        quad(520, [0, -0.30], [1.0, -0.35], [1.0, 0.12], [0, 0.30]),
+        AMBER, 0.028, 0.055));
+      // bright arm bone (leading edge) + trailing edge + two finger struts
+      wing.add(makePoints(strand(150,
+        [[0,0,-0.30],[0.5,0,-0.33],[1.0,0,-0.34]], 0.014), EDGE, 0.045, 0.085));
+      wing.add(makePoints(strand(90,
+        [[0,0,0.30],[0.5,0,0.21],[1.0,0,0.12]], 0.014), GOLD, 0.035, 0.065));
+      wing.add(makePoints(strand(55, [[1.0,0,-0.33],[0.62,0,0.26]], 0.012),
+        EDGE, 0.035, 0.07));
+      wing.add(makePoints(strand(45, [[1.0,0,-0.33],[0.85,0,0.10]], 0.012),
+        EDGE, 0.035, 0.07));
+
       const outer = new THREE.Group();
       outer.position.set(1.0, 0, -0.02);
+      // dim membrane fill
       outer.add(makePoints(
-        fan(560, [[0, -0.32], [1.15, -0.18], [0.8, 0.15], [0.45, 0.30], [0, 0.34]]),
-        [1.0, 0.62, 0.28], 0.04, 0.078));
+        fan(420, [[0, -0.32], [1.15, -0.18], [0.8, 0.15], [0.45, 0.30], [0, 0.34]]),
+        AMBER, 0.026, 0.05));
+      // finger bones fanning from the wrist to each scallop tip
+      const wrist = [0,0,-0.30];
+      for (const tip2 of [[1.15,0,-0.18],[0.8,0,0.15],[0.45,0,0.30]])
+        outer.add(makePoints(strand(70, [wrist, tip2], 0.012), EDGE, 0.035, 0.075));
+      // scalloped trailing outline linking the tips
+      outer.add(makePoints(strand(120,
+        [[1.15,0,-0.18],[0.8,0,0.15],[0.45,0,0.30],[0,0,0.34]], 0.012),
+        [1.0, 0.7, 0.32], 0.03, 0.06));
+
       wing.add(outer);
-      // ember emitter marker at the wing tip
       const tip = new THREE.Group();
-      tip.position.set(1.1, 0, 0);
+      tip.position.set(1.15, 0, -0.18);   // ember emitter at the wing tip
       outer.add(tip);
       const holder = mirror ? new THREE.Group() : wing;
       if (mirror) { holder.scale.x = -1; holder.add(wing); }
